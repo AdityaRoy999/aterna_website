@@ -14,7 +14,7 @@ interface CollectionsProps {
 
 export const Collections: React.FC<CollectionsProps> = ({ onNavigate }) => {
   return (
-    <div className="min-h-screen bg-void/50 animate-fade-in pt-24 md:pt-0 relative z-10">
+    <div className="min-h-screen bg-void/50 animate-fade-in relative z-10">
       <PageHero 
         title="COLLECTIONS" 
         bgImage={collectionsBg}

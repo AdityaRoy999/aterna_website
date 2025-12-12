@@ -26,7 +26,7 @@ const policySections = [
 
 export const PrivacyPolicy: React.FC = () => {
   return (
-    <div className="min-h-screen bg-void animate-fade-in pt-24 md:pt-0">
+    <div className="min-h-screen bg-void animate-fade-in">
       <PageHero 
         title="PRIVACY POLICY" 
         subtitle="Your privacy is the ultimate luxury."

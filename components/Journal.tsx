@@ -285,7 +285,7 @@ export const Journal: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen bg-void animate-fade-in pt-24 md:pt-0 relative z-10">
+    <div className="min-h-screen bg-void animate-fade-in relative z-10">
         {/* Article Reading View Overlay */}
         {selectedArticle && (
             <JournalArticleModal article={selectedArticle} onClose={() => setSelectedArticle(null)} />

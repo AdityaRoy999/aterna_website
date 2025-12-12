@@ -82,7 +82,7 @@ export const OrderTracking: React.FC<OrderTrackingProps> = ({ initialOrderId }) 
   ];
 
   return (
-    <div className="min-h-screen bg-void animate-fade-in pt-24 md:pt-0">
+    <div className="min-h-screen bg-void animate-fade-in">
       <PageHero 
         title="TRACK ORDER" 
         subtitle="Follow the journey of your acquisition."

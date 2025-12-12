@@ -16,7 +16,7 @@ export const ContactUs: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-void animate-fade-in pt-24 md:pt-0">
+    <div className="min-h-screen bg-void animate-fade-in">
       <PageHero 
         title="CONTACT" 
         subtitle="At your service, always."

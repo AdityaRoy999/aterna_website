@@ -337,7 +337,7 @@ export const Shop: React.FC<ShopProps> = ({ initialProductId }) => {
   };
 
   return (
-    <div className="min-h-screen bg-void/50 pt-24 md:pt-0 animate-fade-in relative z-10">
+    <div className="min-h-screen bg-void/50 animate-fade-in relative z-10">
       
       {/* Quick View Modal */}
       {selectedProduct && (

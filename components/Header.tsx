@@ -115,7 +115,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage }) => {
             <div className="flex-1 flex justify-end items-center gap-4">
               <button 
                 onClick={() => setIsCartOpen(true)}
-                className={`hidden md:flex items-center justify-center w-10 h-10 rounded-full hover:bg-luxury hover:text-void transition-all duration-300 relative group hover:scale-110 active:scale-95 ${
+                className={`flex items-center justify-center w-10 h-10 rounded-full hover:bg-luxury hover:text-void transition-all duration-300 relative group hover:scale-110 active:scale-95 ${
                   animateCart 
                     ? 'bg-luxury text-void scale-110 shadow-[0_0_20px_rgba(232,207,160,0.4)]' 
                     : 'bg-white/5'
