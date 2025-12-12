@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AETERNA | Timeless Luxury</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,300;1,400;1,500;1,600&family=DM+Serif+Display&family=Inter:wght@300;400;500;600&family=Manrope:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              void: '#050505',
+              luxury: '#E8CFA0',
+              muted: '#A38961',
+              offwhite: '#F2F2F2',
+              glass: 'rgba(255, 255, 255, 0.05)',
+            },
+            fontFamily: {
+              display: ['"DM Serif Display"', 'serif'],
+              script: ['"Cormorant Garamond"', 'serif'],
+              ui: ['"Manrope"', 'sans-serif'],
+              body: ['"Inter"', 'sans-serif'],
+            },
+            backgroundImage: {
+              'gold-gradient': 'linear-gradient(135deg, #E8CFA0 0%, #A38961 100%)',
+              'dark-gradient': 'linear-gradient(to bottom, rgba(5,5,5,0) 0%, rgba(5,5,5,0.8) 100%)',
+            },
+            animation: {
+              'flow': 'flow 15s ease-in-out infinite',
+              'fade-in': 'fadeIn 1.5s ease-out forwards',
+              'slide-up': 'slideUp 0.8s ease-out forwards',
+              'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            },
+            keyframes: {
+              flow: {
+                '0%, 100%': { backgroundPosition: '0% 50%' },
+                '50%': { backgroundPosition: '100% 50%' },
+              },
+              fadeIn: {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+              slideUp: {
+                '0%': { opacity: '0', transform: 'translateY(40px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              }
+            }
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        background-color: #050505;
+        color: #F2F2F2;
+        overflow-x: hidden;
+      }
+      /* Custom scrollbar for luxury feel */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #050505;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #333;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #A38961;
+      }
+      
+      .text-clip-gold {
+        background-image: url('https://images.unsplash.com/photo-1576502200916-3808e07386a5?q=80&w=2065&auto=format&fit=crop');
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        color: transparent;
+        animation: flow 20s infinite alternate;
+      }
+
+      /* Custom Autofill Styling to match Dark Theme */
+      input:-webkit-autofill,
+      input:-webkit-autofill:hover, 
+      input:-webkit-autofill:focus, 
+      input:-webkit-autofill:active {
+        -webkit-box-shadow: 0 0 0 30px #050505 inset !important;
+        -webkit-text-fill-color: #F2F2F2 !important;
+        caret-color: #F2F2F2;
+        transition: background-color 5000s ease-in-out 0s;
+      }
+
+      /* Hide default cursor on fine pointer devices */
+      @media (pointer: fine) {
+        body, a, button, input, textarea {
+          cursor: none !important;
+        }
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
