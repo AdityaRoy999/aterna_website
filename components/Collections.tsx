@@ -3,6 +3,11 @@ import { PageHero } from './PageHero';
 import { ArrowUpRight } from 'lucide-react';
 import { ParallaxBackground } from './ParallaxBackground';
 
+import collectionsBg from '../src_images/collections.png';
+import royalChrono from '../src_images/royal_chrono.png';
+import channel200 from '../src_images/channel_200.png';
+import pearlWhite from '../src_images/pearl_white.png';
+
 interface CollectionsProps {
   onNavigate: (page: string, params?: any) => void;
 }
@@ -12,7 +17,7 @@ export const Collections: React.FC<CollectionsProps> = ({ onNavigate }) => {
     <div className="min-h-screen bg-void/50 animate-fade-in pt-24 md:pt-0 relative z-10">
       <PageHero 
         title="COLLECTIONS" 
-        bgImage="src_images//collections.png"
+        bgImage={collectionsBg}
       />
       
       <section className="py-20 px-6 max-w-[1600px] mx-auto">
@@ -25,7 +30,7 @@ export const Collections: React.FC<CollectionsProps> = ({ onNavigate }) => {
             data-hover="true"
           >
             <ParallaxBackground 
-              src="src_images//royal_chrono.png" 
+              src={royalChrono} 
               alt="Timepieces"
               className="transition-transform duration-[1.2s] ease-out group-hover:scale-110 opacity-90"
             />
@@ -48,7 +53,7 @@ export const Collections: React.FC<CollectionsProps> = ({ onNavigate }) => {
             data-hover="true"
           >
             <ParallaxBackground 
-              src="src_images//channel_200.png" 
+              src={channel200} 
               alt="Scents"
               className="transition-transform duration-[1.2s] ease-out group-hover:scale-110 opacity-80"
             />
@@ -77,7 +82,7 @@ export const Collections: React.FC<CollectionsProps> = ({ onNavigate }) => {
             data-hover="true"
           >
             <ParallaxBackground 
-              src="src_images//pearl_white.png" 
+              src={pearlWhite} 
               alt="Ornaments"
               className="transition-transform duration-[1.2s] ease-out group-hover:scale-110 opacity-80"
             />

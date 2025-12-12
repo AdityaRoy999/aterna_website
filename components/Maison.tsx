@@ -3,13 +3,15 @@ import { PageHero } from './PageHero';
 import { ArrowUpRight } from 'lucide-react';
 import { ParallaxBackground } from './ParallaxBackground';
 
+import maisonBg from '../src_images/maison.png';
+
 export const Maison: React.FC = () => {
   return (
     <div className="min-h-screen bg-void animate-fade-in pt-24 md:pt-0">
       <PageHero 
         title="THE MAISON" 
         subtitle="Crafting legacy since 1925."
-        bgImage="src_images//maison.png"
+        bgImage={maisonBg}
       />
       
       <section className="py-20 px-6 max-w-[1600px] mx-auto">

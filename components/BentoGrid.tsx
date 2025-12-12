@@ -3,13 +3,16 @@ import { Product } from '../types';
 import { ArrowUpRight } from 'lucide-react';
 import { ParallaxBackground } from './ParallaxBackground';
 
+import clockGold from '../src_images/clock_gold.png';
+import noirStan from '../src_images/noir_stan.png';
+
 const products: Product[] = [
   {
     id: '1',
     name: 'Ulania Watch',
     price: 18100.00,
     category: 'Timepieces',
-    imageUrl: 'src_images//clock_gold.png',
+    imageUrl: clockGold,
     span: 'col-span-1 md:col-span-2 row-span-2',
     isNew: true
   },
@@ -34,7 +37,7 @@ const products: Product[] = [
     name: 'Noir Elegance',
     price: 450.00,
     category: 'Accessories',
-    imageUrl: 'src_images//noir_stan.png',
+    imageUrl: noirStan,
     span: 'col-span-1 md:col-span-2',
   },
 ];

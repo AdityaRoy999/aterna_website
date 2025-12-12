@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { PageHero } from './PageHero';
 import { Search, Package, Truck, CheckCircle, Clock, MapPin } from 'lucide-react';
 
+import orderPlacedBg from '../src_images/order_placed.png';
+
 interface OrderTrackingProps {
   initialOrderId?: string;
 }
@@ -84,7 +86,7 @@ export const OrderTracking: React.FC<OrderTrackingProps> = ({ initialOrderId }) 
       <PageHero 
         title="TRACK ORDER" 
         subtitle="Follow the journey of your acquisition."
-        bgImage="src_images//order_placed.png"
+        bgImage={orderPlacedBg}
       />
       
       <section className="py-24 px-6 max-w-4xl mx-auto">
