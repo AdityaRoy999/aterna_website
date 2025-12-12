@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useCart } from '../context/CartContext';
+import { supabase } from '../src/supabaseClient';
+import emailjs from '@emailjs/browser';
 import { ArrowLeft, CreditCard, Lock, CheckCircle, Truck, Package, Smartphone, Wallet, QrCode, Search } from 'lucide-react';
 
 interface CheckoutProps {
@@ -36,21 +38,76 @@ export const Checkout: React.FC<CheckoutProps> = ({ onNavigate }) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
     
-    // Generate Random Order ID
-    const newOrderId = Math.floor(Math.random() * 10000).toString();
-    setOrderId(newOrderId);
-    
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .insert([
+          {
+            customer_name: `${formData.firstName} ${formData.lastName}`,
+            email: formData.email,
+            address: `${formData.address}, ${formData.city}, ${formData.zip}, ${formData.country}`,
+            total_amount: cartTotal,
+            items: items,
+            status: 'Processing'
+          }
+        ])
+        .select();
+
+      if (error) throw error;
+
+      if (data && data[0]) {
+        const newOrderId = data[0].id;
+        setOrderId(newOrderId);
+
+        // --- Send Email via EmailJS ---
+        try {
+          // Construct the tracking link
+          const trackingLink = `${window.location.origin}?page=tracking&id=${newOrderId}`;
+
+          const emailParams = {
+            order_id: newOrderId,
+            to_name: `${formData.firstName} ${formData.lastName}`,
+            to_email: formData.email,
+            total_amount: cartTotal.toLocaleString(),
+            order_date: new Date().toLocaleDateString(),
+            tracking_link: trackingLink, // Pass the link to the template
+            // Generate HTML table rows for the cart items
+            cart_items_html: items.map(item => `
+              <tr>
+                <td style="padding: 12px; border-bottom: 1px solid #333; color: #e0e0e0;">${item.name} ${item.selectedColor ? `(${item.selectedColor})` : ''}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #333; color: #e0e0e0;">${item.quantity}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #333; color: #d4af37;">$${item.price.toLocaleString()}</td>
+              </tr>
+            `).join('')
+          };
+
+          await emailjs.send(
+            import.meta.env.VITE_EMAILJS_SERVICE_ID,
+            import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+            emailParams,
+            import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+          );
+          console.log('Email sent successfully');
+        } catch (emailError) {
+          console.error('Failed to send email:', emailError);
+          // Don't block the success screen if email fails
+        }
+        // -----------------------------
+
+        setIsSuccess(true);
+        clearCart();
+        window.scrollTo(0, 0);
+      }
+    } catch (error: any) {
+      console.error('Error placing order:', error);
+      alert('Failed to place order: ' + error.message);
+    } finally {
       setIsProcessing(false);
-      setIsSuccess(true);
-      clearCart();
-      window.scrollTo(0, 0);
-    }, 2500);
+    }
   };
 
   const upiApps = [

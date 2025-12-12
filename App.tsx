@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { Home } from './components/Home';
 import { Collections } from './components/Collections';
@@ -26,6 +26,20 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [navigationParams, setNavigationParams] = useState<any>(null);
+
+  // Handle URL parameters for deep linking
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const page = params.get('page');
+    const id = params.get('id');
+
+    if (page) {
+      setCurrentPage(page);
+      if (id) {
+        setNavigationParams({ orderId: id }); // Map 'id' to 'orderId' for tracking
+      }
+    }
+  }, []);
 
   const handleNavigate = (page: string, params?: any) => {
     // Allow navigation if params are present even if on same page (e.g. to open a different product)

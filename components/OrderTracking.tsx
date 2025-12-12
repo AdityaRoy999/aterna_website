@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PageHero } from './PageHero';
-import { Search, Package, Truck, CheckCircle, Clock, MapPin } from 'lucide-react';
+import { supabase } from '../src/supabaseClient';
+import { Search, Package, Truck, CheckCircle, Clock, MapPin, AlertCircle } from 'lucide-react';
 
 import orderPlacedBg from '../src_images/order_placed.png';
 
@@ -20,22 +21,64 @@ type TrackingStep = {
 export const OrderTracking: React.FC<OrderTrackingProps> = ({ initialOrderId }) => {
   const [orderId, setOrderId] = useState(initialOrderId || '');
   const [email, setEmail] = useState('');
-  const [viewState, setViewState] = useState<'input' | 'searching' | 'result'>('input');
+  const [viewState, setViewState] = useState<'input' | 'searching' | 'result' | 'error'>('input');
+  const [orderData, setOrderData] = useState<any>(null);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // If initialOrderId is present, simulate auto-search
   useEffect(() => {
     if (initialOrderId) {
-      setViewState('searching');
-      setTimeout(() => setViewState('result'), 1500);
+      setOrderId(initialOrderId);
+      // Trigger search automatically if we had a way to call handleSearch without event, 
+      // but for now user can just click search or we can refactor.
+      // Let's just set viewState to input with the ID pre-filled.
+      setViewState('input');
     }
   }, [initialOrderId]);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!orderId || !email) return;
+    if (!orderId) return;
     setViewState('searching');
-    // Simulate API delay
-    setTimeout(() => setViewState('result'), 2000);
+    setErrorMessage('');
+    setOrderData(null);
+
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('id', orderId.trim())
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        // Optional: Verify email if entered
+        if (email && data.email.toLowerCase() !== email.toLowerCase()) {
+           throw new Error("Email does not match order records.");
+        }
+        setOrderData(data);
+        setViewState('result');
+      } else {
+        throw new Error("Order not found.");
+      }
+    } catch (error: any) {
+      console.error('Error fetching order:', error);
+      setErrorMessage(error.message || "Order not found. Please check your details.");
+      setViewState('error');
+    }
+  };
+
+  // Helper to determine step status based on DB status
+  const getStepStatus = (stepTitle: string, currentStatus: string) => {
+    const statusOrder = ['Processing', 'Dispatched', 'Out for Delivery', 'Delivered'];
+    const currentIndex = statusOrder.indexOf(currentStatus);
+    const stepIndex = statusOrder.indexOf(stepTitle);
+    
+    if (currentIndex === -1) return 'pending'; // Unknown status
+    if (stepIndex < currentIndex) return 'completed';
+    if (stepIndex === currentIndex) return 'current';
+    return 'pending';
   };
 
   const steps: TrackingStep[] = [
@@ -43,40 +86,40 @@ export const OrderTracking: React.FC<OrderTrackingProps> = ({ initialOrderId }) 
       id: 1,
       title: 'Order Placed',
       description: 'Your order has been securely received.',
-      date: 'Oct 24, 10:30 AM',
-      status: 'completed',
+      date: orderData ? new Date(orderData.created_at).toLocaleDateString() : '',
+      status: 'completed', // Always completed if order exists
       icon: <CheckCircle size={18} />
     },
     {
       id: 2,
       title: 'Processing',
       description: 'Our artisans are preparing your selection.',
-      date: 'Oct 25, 09:15 AM',
-      status: 'completed',
+      date: '',
+      status: orderData ? getStepStatus('Processing', orderData.status) : 'pending',
       icon: <Package size={18} />
     },
     {
       id: 3,
       title: 'Dispatched',
       description: 'Handed over to our secure courier partner.',
-      date: 'Oct 25, 06:00 PM',
-      status: 'current',
+      date: '',
+      status: orderData ? getStepStatus('Dispatched', orderData.status) : 'pending',
       icon: <Truck size={18} />
     },
     {
       id: 4,
       title: 'Out for Delivery',
       description: 'Arriving at your destination.',
-      date: 'Estimated Oct 27',
-      status: 'pending',
+      date: '',
+      status: orderData ? getStepStatus('Out for Delivery', orderData.status) : 'pending',
       icon: <MapPin size={18} />
     },
     {
       id: 5,
       title: 'Delivered',
       description: 'Package delivered to recipient.',
-      date: 'Estimated Oct 27',
-      status: 'pending',
+      date: '',
+      status: orderData ? getStepStatus('Delivered', orderData.status) : 'pending',
       icon: <CheckCircle size={18} />
     }
   ];
@@ -135,17 +178,25 @@ export const OrderTracking: React.FC<OrderTrackingProps> = ({ initialOrderId }) 
           </form>
         </div>
 
+        {/* Error Message */}
+        {viewState === 'error' && (
+           <div className="mb-12 p-6 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-4 text-red-400 animate-fade-in">
+              <AlertCircle size={24} />
+              <p>{errorMessage}</p>
+           </div>
+        )}
+
         {/* Results */}
-        {viewState === 'result' && (
+        {viewState === 'result' && orderData && (
           <div className="animate-slide-up">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 border-b border-white/5 pb-8">
                <div>
                   <h2 className="font-display text-3xl text-offwhite mb-2">Order #{orderId}</h2>
-                  <p className="font-body text-offwhite/50 text-sm">Expected Arrival: <span className="text-luxury">October 27, 2025</span></p>
+                  <p className="font-body text-offwhite/50 text-sm">Total Amount: <span className="text-luxury">${orderData.total_amount}</span></p>
                </div>
                <div className="mt-4 md:mt-0 flex items-center gap-2 px-4 py-2 bg-luxury/10 border border-luxury/20 rounded-full">
                   <span className="w-2 h-2 rounded-full bg-luxury animate-pulse"></span>
-                  <span className="font-ui text-xs text-luxury uppercase tracking-widest font-bold">In Transit</span>
+                  <span className="font-ui text-xs text-luxury uppercase tracking-widest font-bold">{orderData.status}</span>
                </div>
             </div>
 

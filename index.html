@@ -3,6 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#050505" />
+    <meta name="description" content="AETERNA - Luxury Perfumes and Timepieces" />
+    <link rel="apple-touch-icon" href="/pwa-192x192.png" />
     <title>AETERNA | Timeless Luxury</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -11,16 +14,30 @@
       href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,300;1,400;1,500;1,600&family=DM+Serif+Display&family=Inter:wght@300;400;500;600&family=Manrope:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <style>
+      :root {
+        --color-void: #050505;
+        --color-luxury: #E8CFA0;
+        --color-muted: #A38961;
+        --color-offwhite: #F2F2F2;
+        --color-glass: rgba(255, 255, 255, 0.05);
+        --color-glass-border: rgba(255, 255, 255, 0.1);
+      }
+    </style>
     <script>
       tailwind.config = {
+        darkMode: 'class',
         theme: {
           extend: {
             colors: {
-              void: '#050505',
-              luxury: '#E8CFA0',
-              muted: '#A38961',
-              offwhite: '#F2F2F2',
-              glass: 'rgba(255, 255, 255, 0.05)',
+              void: 'var(--color-void)',
+              luxury: 'var(--color-luxury)',
+              muted: 'var(--color-muted)',
+              offwhite: 'var(--color-offwhite)',
+              glass: 'var(--color-glass)',
+            },
+            borderColor: {
+              glass: 'var(--color-glass-border)',
             },
             fontFamily: {
               display: ['"DM Serif Display"', 'serif'],

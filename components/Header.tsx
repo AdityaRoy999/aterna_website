@@ -135,7 +135,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage }) => {
               
               <button 
                 onClick={() => setIsMenuOpen(true)}
-                className="group flex items-center gap-3 bg-luxury/10 hover:bg-luxury border border-luxury/20 px-3 md:px-5 py-2 rounded-full transition-all duration-300 hover:scale-105 active:scale-95"
+                className="group flex items-center gap-3 bg-transparent hover:bg-luxury border border-white/10 hover:border-luxury px-3 md:px-5 py-2 rounded-full transition-all duration-300 hover:scale-105 active:scale-95"
                 data-hover="true"
               >
                 {/* Hidden on mobile, visible on md+ */}

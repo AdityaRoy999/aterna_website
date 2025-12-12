@@ -72,7 +72,9 @@ const CartItemRow: React.FC<{
           </div>
           <p className="font-ui text-xs text-luxury mb-1 mt-1">${item.price.toLocaleString()}</p>
           {item.selectedColor && (
-            <p className="font-body text-[10px] text-offwhite/40 uppercase tracking-widest">Color: {item.selectedColor}</p>
+            <p className="font-body text-[10px] text-offwhite/40 uppercase tracking-widest">
+              {item.variantType === 'Size' ? 'Size' : (item.variantType || 'Color')}: {item.selectedColor}
+            </p>
           )}
         </div>
         

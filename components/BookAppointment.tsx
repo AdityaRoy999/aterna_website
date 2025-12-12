@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { PageHero } from './PageHero';
-import { Calendar, Clock, MapPin, Send, CheckCircle } from 'lucide-react';
+import { MapPin, Send, CheckCircle } from 'lucide-react';
+import { CustomSelect, CustomDatePicker, CustomTimePicker } from './CustomInputs';
+import { supabase } from '../src/supabaseClient';
 
 export const BookAppointment: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -20,16 +22,36 @@ export const BookAppointment: React.FC = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .insert([
+          {
+            name: formData.name,
+            email: formData.email,
+            location: formData.location,
+            preferred_date: formData.date,
+            preferred_time: formData.time,
+            interest: formData.interest,
+            message: formData.message,
+            status: 'Pending'
+          }
+        ]);
+
+      if (error) throw error;
+
       setIsSuccess(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 2000);
+    } catch (error: any) {
+      console.error('Error booking appointment:', error);
+      alert('Failed to book appointment: ' + error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -86,7 +108,8 @@ export const BookAppointment: React.FC = () => {
                  </div>
                  <div className="flex items-center gap-4 text-offwhite/80">
                     <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-luxury">
-                       <Clock size={20} />
+                       {/* Replaced Clock with a simple div or icon since Clock is now imported from CustomInputs implicitly or we need to re-import it if we removed it from top import */}
+                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                     </div>
                     <div>
                       <h4 className="font-display text-lg">Flexible Hours</h4>
@@ -130,23 +153,32 @@ export const BookAppointment: React.FC = () => {
                         <label className="block font-ui text-[10px] uppercase tracking-wider text-offwhite/40 mb-2">Email Address</label>
                         <input required name="email" type="email" value={formData.email} onChange={handleInputChange} className="w-full bg-void/50 border-b border-white/10 focus:border-luxury text-offwhite p-4 outline-none transition-colors" />
                      </div>
-                     <div>
-                        <label className="block font-ui text-[10px] uppercase tracking-wider text-offwhite/40 mb-2">Preferred Date</label>
-                        <input required name="date" type="date" value={formData.date} onChange={handleInputChange} className="w-full bg-void/50 border-b border-white/10 focus:border-luxury text-offwhite p-4 outline-none transition-colors appearance-none" />
-                     </div>
-                     <div>
-                        <label className="block font-ui text-[10px] uppercase tracking-wider text-offwhite/40 mb-2">Preferred Time</label>
-                        <input required name="time" type="time" value={formData.time} onChange={handleInputChange} className="w-full bg-void/50 border-b border-white/10 focus:border-luxury text-offwhite p-4 outline-none transition-colors appearance-none" />
-                     </div>
+                     
+                     <CustomDatePicker 
+                        label="Preferred Date" 
+                        value={formData.date} 
+                        onChange={(val) => setFormData({...formData, date: val})} 
+                     />
+                     
+                     <CustomTimePicker 
+                        label="Preferred Time" 
+                        value={formData.time} 
+                        onChange={(val) => setFormData({...formData, time: val})} 
+                     />
+
                      <div className="md:col-span-2">
-                        <label className="block font-ui text-[10px] uppercase tracking-wider text-offwhite/40 mb-2">Area of Interest</label>
-                        <select name="interest" value={formData.interest} onChange={handleInputChange} className="w-full bg-void/50 border-b border-white/10 focus:border-luxury text-offwhite p-4 outline-none transition-colors appearance-none">
-                           <option value="timepieces">Timepieces</option>
-                           <option value="jewelry">Fine Jewelry</option>
-                           <option value="fragrance">Fragrance</option>
-                           <option value="bespoke">Bespoke Commission</option>
-                           <option value="other">Other Inquiry</option>
-                        </select>
+                        <CustomSelect 
+                           label="Area of Interest"
+                           value={formData.interest}
+                           onChange={(val) => setFormData({...formData, interest: val})}
+                           options={[
+                              { value: 'timepieces', label: 'Timepieces' },
+                              { value: 'jewelry', label: 'Fine Jewelry' },
+                              { value: 'fragrance', label: 'Fragrance' },
+                              { value: 'bespoke', label: 'Bespoke Commission' },
+                              { value: 'other', label: 'Other Inquiry' }
+                           ]}
+                        />
                      </div>
                      <div className="md:col-span-2">
                         <label className="block font-ui text-[10px] uppercase tracking-wider text-offwhite/40 mb-2">Message (Optional)</label>

@@ -34,7 +34,7 @@ export const Preloader: React.FC<{ onComplete: () => void }> = ({ onComplete }) 
         </h1>
       </div>
       
-      <div className="h-px w-0 bg-luxury/30 mt-8 transition-all duration-[1s] ease-out"
+      <div className="h-px w-0 bg-luxury opacity-30 mt-8 transition-all duration-[1s] ease-out"
            style={{ width: animationStep >= 2 ? '200px' : '0px' }} 
       />
       
