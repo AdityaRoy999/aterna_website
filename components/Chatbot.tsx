@@ -4,16 +4,18 @@ import { GoogleGenAI, Chat } from "@google/genai";
 import emailjs from '@emailjs/browser';
 import { shopProducts } from './productData';
 import { useBookmarks } from '../context/BookmarkContext';
+import { useAuth } from '../context/AuthContext';
 
 interface Message {
   id: string;
   text: string;
   sender: 'user' | 'ai';
-  type?: 'text' | 'payment_request' | 'payment_success' | 'product_display';
+  type?: 'text' | 'payment_request' | 'payment_success' | 'product_display' | 'auth_request';
   paymentDetails?: {
     product: string;
     price: number;
     currency: string;
+    imageUrl?: string;
     customerDetails: {
       firstName: string;
       lastName: string;
@@ -53,7 +55,10 @@ CAPABILITIES:
 3. TAKE ORDERS: You can process orders directly.
 
 ORDERING PROTOCOL:
-To place an order, you MUST collect ALL the following information one by one or in groups:
+To place an order, the user MUST be signed in.
+If the user is NOT signed in (check context), politely ask them to sign in first. Do NOT collect details or process orders for guests.
+
+If the user IS signed in, you MUST collect ALL the following information one by one or in groups:
 1. First Name
 2. Last Name
 3. Email Address (for the receipt)
@@ -108,7 +113,7 @@ const formatMessage = (text: string, sender: 'user' | 'ai') => {
   });
 };
 
-export const Chatbot: React.FC = () => {
+export const Chatbot: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useState<Message[]>([
@@ -118,6 +123,7 @@ export const Chatbot: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatSessionRef = useRef<Chat | null>(null);
   const { bookmarkedIds } = useBookmarks();
+  const { user } = useAuth();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -218,7 +224,7 @@ export const Chatbot: React.FC = () => {
         .map(p => p.name)
         .join(', ');
       
-      const contextMessage = `[System Context: User has bookmarked: ${bookmarkedProducts || 'None'}. Current User Input: "${newUserMsg.text}"]`;
+      const contextMessage = `[System Context: User is logged in: ${user ? 'YES' : 'NO'}. User has bookmarked: ${bookmarkedProducts || 'None'}. Current User Input: "${newUserMsg.text}"]`;
 
       const result = await chatSessionRef.current.sendMessage({ message: contextMessage });
       const responseText = result.text;
@@ -230,6 +236,22 @@ export const Chatbot: React.FC = () => {
             const data = JSON.parse(cleanText);
             
             if (data.action === 'request_payment') {
+               if (!user) {
+                 const signInMsg: Message = {
+                   id: (Date.now() + 1).toString(),
+                   text: "Please sign in to complete your purchase.",
+                   sender: 'ai',
+                   type: 'text'
+                 };
+                 setMessages(prev => [...prev, signInMsg]);
+                 onOpenAuth();
+                 return;
+               }
+
+               // Find product image
+               const productObj = shopProducts.find(p => p.name === data.product);
+               const imageUrl = productObj ? productObj.imageUrl : undefined;
+
                const paymentMsg: Message = {
                  id: (Date.now() + 1).toString(),
                  text: `Please confirm your payment of $${data.price.toLocaleString()} for the ${data.product}.`,
@@ -239,6 +261,7 @@ export const Chatbot: React.FC = () => {
                    product: data.product,
                    price: data.price,
                    currency: data.currency,
+                   imageUrl: imageUrl,
                    customerDetails: data.customerDetails
                  }
                };
@@ -360,6 +383,23 @@ export const Chatbot: React.FC = () => {
                     <CreditCard size={16} />
                     <span className="text-xs font-bold uppercase tracking-wider">Secure Payment</span>
                   </div>
+                  
+                  {msg.paymentDetails.imageUrl && (
+                    <div className="flex gap-3 mb-3 bg-white/5 p-2 rounded-lg">
+                      <div className="w-12 h-12 rounded bg-white/10 overflow-hidden flex-shrink-0">
+                        <img 
+                          src={msg.paymentDetails.imageUrl} 
+                          alt={msg.paymentDetails.product}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex flex-col justify-center">
+                        <span className="text-[#E8CFA0] text-xs font-bold">{msg.paymentDetails.product}</span>
+                        <span className="text-[#F2F2F2]/70 text-[10px]">${msg.paymentDetails.price.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="mb-3 text-xs text-[#F2F2F2]/70 space-y-1 border-b border-white/5 pb-2">
                     <p><span className="text-[#E8CFA0]">Ship to:</span> {msg.paymentDetails.customerDetails.firstName} {msg.paymentDetails.customerDetails.lastName}</p>
                     <p>{msg.paymentDetails.customerDetails.address}, {msg.paymentDetails.customerDetails.city}</p>

@@ -110,7 +110,7 @@ const App: React.FC = () => {
       <div className="min-h-screen bg-void text-offwhite font-body selection:bg-luxury selection:text-void cursor-none relative overflow-x-hidden">
         {/* Global Elements */}
         <CustomCursor />
-        <Chatbot />
+        <Chatbot onOpenAuth={() => setIsAuthModalOpen(true)} />
         <CartSidebar onCheckout={() => {
           if (user) {
             handleNavigate('checkout');
