@@ -1,6 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { AuthProvider } from './context/AuthContext';
+import { CartProvider } from './context/CartContext';
+import { BookmarkProvider } from './context/BookmarkContext';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -10,6 +13,12 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <App />
+    <AuthProvider>
+      <BookmarkProvider>
+        <CartProvider>
+          <App />
+        </CartProvider>
+      </BookmarkProvider>
+    </AuthProvider>
   </React.StrictMode>
 );

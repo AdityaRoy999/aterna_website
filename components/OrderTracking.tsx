@@ -54,9 +54,14 @@ export const OrderTracking: React.FC<OrderTrackingProps> = ({ initialOrderId }) 
 
       if (data) {
         // Optional: Verify email if entered
-        if (email && data.email.toLowerCase() !== email.toLowerCase()) {
+        // Check if data.email exists before calling toLowerCase
+        if (email && data.email && data.email.toLowerCase() !== email.toLowerCase()) {
            throw new Error("Email does not match order records.");
         }
+        // If order has no email (legacy), we might want to allow or block. 
+        // For now, if user entered email but order has none, maybe we should warn?
+        // But to fix the crash, the above check is sufficient.
+        
         setOrderData(data);
         setViewState('result');
       } else {

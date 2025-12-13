@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { PageHero } from './PageHero';
-import { ArrowUpRight, ChevronDown, X, ShoppingBag, Star } from 'lucide-react';
+import { ArrowUpRight, ChevronDown, X, ShoppingBag, Star, MessageSquare } from 'lucide-react';
 import { Product } from '../types';
 import { ParallaxBackground } from './ParallaxBackground';
 import { useCart } from '../context/CartContext';
 import { useBookmarks } from '../context/BookmarkContext';
+import { Reviews } from './Reviews';
 
 import { shopProducts } from './productData';
 import shopBg from '../src_images/shop.png';
@@ -17,6 +18,7 @@ type SortOption = 'default' | 'price-asc' | 'price-desc' | 'name-asc';
 const QuickViewModal: React.FC<{ product: Product; onClose: () => void }> = ({ product, onClose }) => {
   const [isClosing, setIsClosing] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState(product.variants?.[0]?.name || 'Gold');
+  const [activeTab, setActiveTab] = useState<'details' | 'reviews'>('details');
   const { addToCart } = useCart();
   const { toggleBookmark, isBookmarked } = useBookmarks();
 
@@ -77,78 +79,106 @@ const QuickViewModal: React.FC<{ product: Product; onClose: () => void }> = ({ p
         {/* Right Column: Details */}
         <div className="w-full md:w-1/2 flex-1 md:h-full p-6 md:p-10 flex flex-col overflow-y-auto custom-scrollbar relative">
           
-          {/* Header Info */}
-          <div className="mb-auto">
-             <div className="flex items-center gap-2 mb-3">
-                <span className="font-ui text-[10px] text-luxury uppercase tracking-widest border border-luxury/30 px-2 py-0.5 rounded-full">{product.category}</span>
-                <div className="flex items-center gap-1 text-luxury text-[10px]">
-                  <Star size={10} fill="currentColor" />
-                  <span className="font-ui font-medium">4.9</span>
-                </div>
-             </div>
-             
-             <h2 className="font-display text-3xl md:text-4xl text-offwhite mb-2 leading-tight">
-               {product.name}
-             </h2>
-             
-             <p className="font-ui text-xl text-luxury mb-6">
-               ${product.price.toLocaleString()}
-             </p>
+          {/* Tabs */}
+          <div className="flex gap-6 mb-6 border-b border-white/5 pb-4">
+            <button
+              onClick={() => setActiveTab('details')}
+              className={`text-sm uppercase tracking-widest transition-colors pb-1 relative ${
+                activeTab === 'details' ? 'text-luxury' : 'text-white/40 hover:text-white'
+              }`}
+            >
+              Details
+              {activeTab === 'details' && <span className="absolute bottom-[-17px] left-0 w-full h-[1px] bg-luxury" />}
+            </button>
+            <button
+              onClick={() => setActiveTab('reviews')}
+              className={`text-sm uppercase tracking-widest transition-colors pb-1 relative ${
+                activeTab === 'reviews' ? 'text-luxury' : 'text-white/40 hover:text-white'
+              }`}
+            >
+              Reviews
+              {activeTab === 'reviews' && <span className="absolute bottom-[-17px] left-0 w-full h-[1px] bg-luxury" />}
+            </button>
+          </div>
 
-             <p className="font-body text-offwhite/60 leading-relaxed text-sm mb-6">
-               Meticulously crafted to embody the essence of AETERNA. This piece represents a harmonious blend of traditional artistry and contemporary design.
-             </p>
-
-             {/* Visual Variants */}
-             {product.variants && (
-               <div className="mb-6">
-                 <span className="font-ui text-[10px] text-offwhite/40 uppercase tracking-widest block mb-2">
-                   Select {product.variantType === 'Size' ? 'Quantity' : (product.variantType || 'Option')}
-                 </span>
-                 <div className="flex gap-3">
-                   {product.variants.map(variant => (
-                     <button
-                       key={variant.name}
-                       onClick={() => setSelectedVariant(variant.name)}
-                       className={`
-                         ${product.variantType === 'Size' ? 'px-4 py-2 border text-xs rounded-md' : 'w-6 h-6 rounded-full border-2'} 
-                         transition-all 
-                         ${selectedVariant === variant.name 
-                           ? (product.variantType === 'Size' ? 'bg-luxury text-void border-luxury font-bold' : 'border-white scale-110 ring-2 ring-white/10') 
-                           : (product.variantType === 'Size' ? 'border-white/20 text-offwhite hover:border-white/40' : 'border-white/20 hover:border-white/40')}
-                       `}
-                       style={product.variantType !== 'Size' ? { backgroundColor: variant.colorCode } : {}}
-                       data-hover="true"
-                       title={variant.name}
-                     >
-                       {product.variantType === 'Size' ? variant.name : ''}
-                     </button>
-                   ))}
+          {activeTab === 'details' ? (
+            <>
+              {/* Header Info */}
+              <div className="mb-auto animate-fade-in">
+                 <div className="flex items-center gap-2 mb-3">
+                    <span className="font-ui text-[10px] text-luxury uppercase tracking-widest border border-luxury/30 px-2 py-0.5 rounded-full">{product.category}</span>
+                    <div className="flex items-center gap-1 text-luxury text-[10px]">
+                      <Star size={10} fill="currentColor" />
+                      <span className="font-ui font-medium">4.9</span>
+                    </div>
                  </div>
-               </div>
-             )}
-          </div>
+                 
+                 <h2 className="font-display text-3xl md:text-4xl text-offwhite mb-2 leading-tight">
+                   {product.name}
+                 </h2>
+                 
+                 <p className="font-ui text-xl text-luxury mb-6">
+                   ${product.price.toLocaleString()}
+                 </p>
 
-          {/* Actions */}
-          <div className="mt-4 pt-6 border-t border-white/5 flex flex-col sm:flex-row gap-3">
-            <button 
-              onClick={handleAddToCart}
-              className="flex-1 bg-luxury text-void font-ui font-bold text-xs uppercase tracking-widest py-3.5 rounded-lg hover:bg-white transition-all duration-300 flex items-center justify-center gap-2 group shadow-[0_0_20px_rgba(232,207,160,0.2)]" 
-              data-hover="true"
-            >
-              <ShoppingBag size={16} className="transition-transform group-hover:-translate-y-0.5" />
-              Add to Cart
-            </button>
-            <button 
-              onClick={() => toggleBookmark(product.id)}
-              className={`px-5 py-3.5 border rounded-lg transition-colors ${isSaved ? 'bg-luxury/20 border-luxury text-luxury' : 'border-white/10 text-offwhite hover:bg-white/5'}`} 
-              data-hover="true"
-              title={isSaved ? "Remove from Wishlist" : "Add to Wishlist"}
-            >
-               <span className="sr-only">Wishlist</span>
-               <Star size={18} fill={isSaved ? "currentColor" : "none"} className={isSaved ? "text-luxury" : "text-offwhite/50 hover:text-luxury transition-colors"} />
-            </button>
-          </div>
+                 <p className="font-body text-offwhite/60 leading-relaxed text-sm mb-6">
+                   Meticulously crafted to embody the essence of AETERNA. This piece represents a harmonious blend of traditional artistry and contemporary design.
+                 </p>
+
+                 {/* Visual Variants */}
+                 {product.variants && (
+                   <div className="mb-6">
+                     <span className="font-ui text-[10px] text-offwhite/40 uppercase tracking-widest block mb-2">
+                       Select {product.variantType === 'Size' ? 'Quantity' : (product.variantType || 'Option')}
+                     </span>
+                     <div className="flex gap-3">
+                       {product.variants.map(variant => (
+                         <button
+                           key={variant.name}
+                           onClick={() => setSelectedVariant(variant.name)}
+                           className={`
+                             ${product.variantType === 'Size' ? 'px-4 py-2 border text-xs rounded-md' : 'w-6 h-6 rounded-full border-2'} 
+                             transition-all 
+                             ${selectedVariant === variant.name 
+                               ? (product.variantType === 'Size' ? 'bg-luxury text-void border-luxury font-bold' : 'border-white scale-110 ring-2 ring-white/10') 
+                               : (product.variantType === 'Size' ? 'border-white/20 text-offwhite hover:border-white/40' : 'border-white/20 hover:border-white/40')}
+                           `}
+                           style={product.variantType !== 'Size' ? { backgroundColor: variant.colorCode } : {}}
+                           data-hover="true"
+                           title={variant.name}
+                         >
+                           {product.variantType === 'Size' ? variant.name : ''}
+                         </button>
+                       ))}
+                     </div>
+                   </div>
+                 )}
+              </div>
+
+              {/* Actions */}
+              <div className="mt-4 pt-6 border-t border-white/5 flex flex-col sm:flex-row gap-3 animate-fade-in">
+                <button 
+                  onClick={handleAddToCart}
+                  className="flex-1 bg-luxury text-void font-ui font-bold text-xs uppercase tracking-widest py-3.5 rounded-lg hover:bg-white transition-all duration-300 flex items-center justify-center gap-2 group shadow-[0_0_20px_rgba(232,207,160,0.2)]" 
+                  data-hover="true"
+                >
+                  <ShoppingBag size={16} className="transition-transform group-hover:-translate-y-0.5" />
+                  Add to Cart
+                </button>
+                <button 
+                  onClick={() => toggleBookmark(product.id)}
+                  className={`px-5 py-3.5 border rounded-lg transition-colors ${isSaved ? 'bg-luxury/20 border-luxury text-luxury' : 'border-white/10 text-offwhite hover:bg-white/5'}`} 
+                  data-hover="true"
+                  title={isSaved ? "Remove from Wishlist" : "Add to Wishlist"}
+                >
+                   <span className="sr-only">Wishlist</span>
+                   <Star size={18} fill={isSaved ? "currentColor" : "none"} className={isSaved ? "text-luxury" : "text-offwhite/50 hover:text-luxury transition-colors"} />
+                </button>
+              </div>
+            </>
+          ) : (
+            <Reviews productId={product.id} />
+          )}
 
         </div>
       </div>

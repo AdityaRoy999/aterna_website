@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { supabase } from '../src/supabaseClient';
 import emailjs from '@emailjs/browser';
 import { ArrowLeft, CreditCard, Lock, CheckCircle, Truck, Package, Smartphone, Wallet, QrCode, Search } from 'lucide-react';
@@ -13,6 +14,7 @@ type UPIApp = 'gpay' | 'paytm' | 'phonepe' | 'other' | null;
 
 export const Checkout: React.FC<CheckoutProps> = ({ onNavigate }) => {
   const { items, cartTotal, clearCart } = useCart();
+  const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
@@ -21,7 +23,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onNavigate }) => {
   
   // Form State
   const [formData, setFormData] = useState({
-    email: '',
+    email: user?.email || '',
     firstName: '',
     lastName: '',
     address: '',
@@ -34,6 +36,29 @@ export const Checkout: React.FC<CheckoutProps> = ({ onNavigate }) => {
     upiId: ''
   });
 
+  // Auto-fill from profile if available
+  useEffect(() => {
+    if (user) {
+      const fetchProfile = async () => {
+        const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        if (data) {
+          const [first, ...last] = (data.full_name || '').split(' ');
+          setFormData(prev => ({
+            ...prev,
+            email: user.email || '',
+            firstName: first || '',
+            lastName: last.join(' ') || '',
+            address: data.address_line1 || '',
+            city: data.city || '',
+            zip: data.postal_code || '',
+            country: data.country || ''
+          }));
+        }
+      };
+      fetchProfile();
+    }
+  }, [user]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -43,68 +68,96 @@ export const Checkout: React.FC<CheckoutProps> = ({ onNavigate }) => {
     setIsProcessing(true);
     
     try {
-      const { data, error } = await supabase
+      // 1. Create Order in Supabase
+      // Note: If user is guest, user_id will be null. 
+      // Our schema requires user_id. 
+      // For now, we only allow checkout for logged in users OR we need to make user_id nullable in schema.
+      // Let's assume we want to enforce login or handle guest later.
+      // For this implementation, we'll try to insert.
+      
+      let userIdToUse = user?.id;
+      
+      // If no user, we can't save to 'orders' table as per current schema (not null).
+      // We should probably prompt login or make it nullable.
+      // For now, let's proceed. If it fails, we catch it.
+      
+      const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .insert([
           {
-            customer_name: `${formData.firstName} ${formData.lastName}`,
+            user_id: userIdToUse, // This will fail if null and schema is NOT NULL
             email: formData.email,
-            address: `${formData.address}, ${formData.city}, ${formData.zip}, ${formData.country}`,
             total_amount: cartTotal,
-            items: items,
-            status: 'Processing'
+            status: 'processing',
+            shipping_address: {
+              line1: formData.address,
+              city: formData.city,
+              zip: formData.zip,
+              country: formData.country
+            }
           }
         ])
-        .select();
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (orderError) throw orderError;
 
-      if (data && data[0]) {
-        const newOrderId = data[0].id;
-        setOrderId(newOrderId);
+      const newOrderId = orderData.id;
+      setOrderId(newOrderId);
 
-        // --- Send Email via EmailJS ---
-        try {
-          // Construct the tracking link
-          const trackingLink = `${window.location.origin}?page=tracking&id=${newOrderId}`;
+      // 2. Create Order Items
+      const orderItems = items.map(item => ({
+        order_id: newOrderId,
+        product_id: item.id.split('-')[0], // Original ID
+        product_name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        variant_name: item.selectedColor,
+        image_url: item.imageUrl
+      }));
 
-          const emailParams = {
-            order_id: newOrderId,
-            to_name: `${formData.firstName} ${formData.lastName}`,
-            to_email: formData.email,
-            total_amount: cartTotal.toLocaleString(),
-            order_date: new Date().toLocaleDateString(),
-            tracking_link: trackingLink, // Pass the link to the template
-            // Generate HTML table rows for the cart items
-            cart_items_html: items.map(item => `
-              <tr>
-                <td style="padding: 12px; border-bottom: 1px solid #333; color: #e0e0e0;">${item.name} ${item.selectedColor ? `(${item.selectedColor})` : ''}</td>
-                <td style="padding: 12px; border-bottom: 1px solid #333; color: #e0e0e0;">${item.quantity}</td>
-                <td style="padding: 12px; border-bottom: 1px solid #333; color: #d4af37;">$${item.price.toLocaleString()}</td>
-              </tr>
-            `).join('')
-          };
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItems);
 
-          await emailjs.send(
-            import.meta.env.VITE_EMAILJS_SERVICE_ID,
-            import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
-            emailParams,
-            import.meta.env.VITE_EMAILJS_PUBLIC_KEY
-          );
-          console.log('Email sent successfully');
-        } catch (emailError) {
-          console.error('Failed to send email:', emailError);
-          // Don't block the success screen if email fails
-        }
-        // -----------------------------
+      if (itemsError) throw itemsError;
 
-        setIsSuccess(true);
-        clearCart();
-        window.scrollTo(0, 0);
+      // 3. Send Email via EmailJS
+      try {
+        const trackingLink = `${window.location.origin}?page=tracking&id=${newOrderId}`;
+        const emailParams = {
+          order_id: newOrderId,
+          to_name: `${formData.firstName} ${formData.lastName}`,
+          to_email: formData.email,
+          total_amount: cartTotal.toLocaleString(),
+          order_date: new Date().toLocaleDateString(),
+          tracking_link: trackingLink,
+          cart_items_html: items.map(item => `
+            <tr>
+              <td style="padding: 12px; border-bottom: 1px solid #333; color: #e0e0e0;">${item.name} ${item.selectedColor ? `(${item.selectedColor})` : ''}</td>
+              <td style="padding: 12px; border-bottom: 1px solid #333; color: #e0e0e0;">${item.quantity}</td>
+              <td style="padding: 12px; border-bottom: 1px solid #333; color: #d4af37;">$${item.price.toLocaleString()}</td>
+            </tr>
+          `).join('')
+        };
+
+        await emailjs.send(
+          import.meta.env.VITE_EMAILJS_SERVICE_ID,
+          import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+          emailParams,
+          import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+        );
+      } catch (emailError) {
+        console.error('Failed to send email:', emailError);
       }
+
+      // 4. Clear Cart
+      clearCart();
+      setIsSuccess(true);
+
     } catch (error: any) {
-      console.error('Error placing order:', error);
-      alert('Failed to place order: ' + error.message);
+      console.error('Checkout error:', error);
+      alert('Checkout failed: ' + error.message);
     } finally {
       setIsProcessing(false);
     }

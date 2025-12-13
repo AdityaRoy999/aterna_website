@@ -1,16 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, ShoppingBag, X } from 'lucide-react';
+import { Menu, ShoppingBag, X, User } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 
 interface HeaderProps {
   onNavigate: (page: string, params?: any) => void;
   currentPage: string;
+  onOpenAuth: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage }) => {
+export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenAuth }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { itemCount, setIsCartOpen } = useCart();
+  const { user } = useAuth();
   const [animateCart, setAnimateCart] = useState(false);
   const prevCountRef = useRef(itemCount);
 
@@ -113,6 +116,15 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage }) => {
 
             {/* Right Actions */}
             <div className="flex-1 flex justify-end items-center gap-4">
+              <button 
+                onClick={() => user ? onNavigate('profile') : onOpenAuth()}
+                className="flex items-center justify-center w-10 h-10 rounded-full bg-white/5 hover:bg-luxury hover:text-void transition-all duration-300 relative group hover:scale-110 active:scale-95"
+                title={user ? "My Account" : "Sign In"}
+                data-hover="true"
+              >
+                 <User size={18} />
+              </button>
+
               <button 
                 onClick={() => setIsCartOpen(true)}
                 className={`flex items-center justify-center w-10 h-10 rounded-full hover:bg-luxury hover:text-void transition-all duration-300 relative group hover:scale-110 active:scale-95 ${
