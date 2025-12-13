@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageHero } from './PageHero';
-import { MapPin, Send, CheckCircle } from 'lucide-react';
+import { MapPin, Send, CheckCircle, Lock } from 'lucide-react';
 import { CustomSelect, CustomDatePicker, CustomTimePicker } from './CustomInputs';
 import { supabase } from '../src/supabaseClient';
+import { useAuth } from '../context/AuthContext';
 
 export const BookAppointment: React.FC = () => {
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [formData, setFormData] = useState({
@@ -18,12 +20,24 @@ export const BookAppointment: React.FC = () => {
     message: ''
   });
 
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        name: user.user_metadata?.full_name || '',
+        email: user.email || ''
+      }));
+    }
+  }, [user]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return; // Should be handled by UI, but extra safety
+    
     setIsSubmitting(true);
     
     try {
@@ -31,6 +45,7 @@ export const BookAppointment: React.FC = () => {
         .from('appointments')
         .insert([
           {
+            user_id: user.id,
             name: formData.name,
             email: formData.email,
             location: formData.location,
@@ -121,6 +136,17 @@ export const BookAppointment: React.FC = () => {
 
             {/* Form */}
             <div className="lg:col-span-7">
+               {!user ? (
+                 <div className="bg-stone-900/30 p-8 md:p-12 rounded-[2rem] border border-white/5 backdrop-blur-sm flex flex-col items-center justify-center text-center min-h-[400px]">
+                    <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-luxury mb-6">
+                       <Lock size={32} />
+                    </div>
+                    <h3 className="font-display text-2xl text-offwhite mb-4">Members Only</h3>
+                    <p className="font-body text-offwhite/60 max-w-sm mb-8">
+                      Please sign in to your account to book a private consultation with our specialists.
+                    </p>
+                 </div>
+               ) : (
                <form onSubmit={handleSubmit} className="bg-stone-900/30 p-8 md:p-12 rounded-[2rem] border border-white/5 backdrop-blur-sm">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                      <div className="md:col-span-2">
@@ -147,11 +173,11 @@ export const BookAppointment: React.FC = () => {
 
                      <div>
                         <label className="block font-ui text-[10px] uppercase tracking-wider text-offwhite/40 mb-2">Full Name</label>
-                        <input required name="name" type="text" value={formData.name} onChange={handleInputChange} className="w-full bg-void/50 border-b border-white/10 focus:border-luxury text-offwhite p-4 outline-none transition-colors" />
+                        <input required name="name" type="text" value={formData.name} onChange={handleInputChange} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-offwhite placeholder:text-white/30 focus:outline-none focus:border-luxury transition-colors" />
                      </div>
                      <div>
                         <label className="block font-ui text-[10px] uppercase tracking-wider text-offwhite/40 mb-2">Email Address</label>
-                        <input required name="email" type="email" value={formData.email} onChange={handleInputChange} className="w-full bg-void/50 border-b border-white/10 focus:border-luxury text-offwhite p-4 outline-none transition-colors" />
+                        <input required name="email" type="email" value={formData.email} onChange={handleInputChange} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-offwhite placeholder:text-white/30 focus:outline-none focus:border-luxury transition-colors" />
                      </div>
                      
                      <CustomDatePicker 
@@ -182,7 +208,7 @@ export const BookAppointment: React.FC = () => {
                      </div>
                      <div className="md:col-span-2">
                         <label className="block font-ui text-[10px] uppercase tracking-wider text-offwhite/40 mb-2">Message (Optional)</label>
-                        <textarea name="message" value={formData.message} onChange={handleInputChange} rows={3} className="w-full bg-void/50 border-b border-white/10 focus:border-luxury text-offwhite p-4 outline-none transition-colors resize-none"></textarea>
+                        <textarea name="message" value={formData.message} onChange={handleInputChange} rows={3} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-offwhite placeholder:text-white/30 focus:outline-none focus:border-luxury transition-colors resize-none"></textarea>
                      </div>
                   </div>
 
@@ -196,6 +222,7 @@ export const BookAppointment: React.FC = () => {
                      {!isSubmitting && <Send size={16} className="transition-transform group-hover:translate-x-1" />}
                   </button>
                </form>
+               )}
             </div>
           </div>
         )}

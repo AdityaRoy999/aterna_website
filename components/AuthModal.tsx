@@ -70,10 +70,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
   const handleGoogleLogin = async () => {
     try {
+      // Determine the correct redirect URL based on the environment
+      const redirectTo = window.location.hostname === 'localhost'
+        ? 'http://localhost:3000' // Explicitly set local URL
+        : 'https://aeterna-lyart.vercel.app'; // Explicitly set production URL
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin
+          redirectTo
         }
       });
       if (error) throw error;

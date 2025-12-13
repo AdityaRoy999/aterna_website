@@ -1,15 +1,31 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 export const CustomCursor: React.FC = () => {
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const cursorDotRef = useRef<HTMLDivElement>(null);
+  const cursorRingRef = useRef<HTMLDivElement>(null);
   const [isHovering, setIsHovering] = useState(false);
   const [isBlob, setIsBlob] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  
+  // Use refs for state accessed inside the event listener to avoid re-binding
+  const isHoveringRef = useRef(false);
+
+  // Sync ref with state
+  useEffect(() => {
+    isHoveringRef.current = isHovering;
+  }, [isHovering]);
 
   useEffect(() => {
     const updateCursor = (e: MouseEvent) => {
-      setPosition({ x: e.clientX, y: e.clientY });
       if (!isVisible) setIsVisible(true);
+      
+      // Direct DOM manipulation for performance
+      if (cursorDotRef.current) {
+        cursorDotRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) translate(-50%, -50%) scale(${isHoveringRef.current ? 0 : 1})`;
+      }
+      if (cursorRingRef.current) {
+        cursorRingRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) translate(-50%, -50%)`;
+      }
     };
 
     const handleMouseOver = (e: MouseEvent) => {
@@ -44,7 +60,7 @@ export const CustomCursor: React.FC = () => {
       window.removeEventListener('mousemove', updateCursor);
       document.removeEventListener('mouseover', handleMouseOver);
     };
-  }, [isVisible]);
+  }, [isVisible]); // Removed isHovering dependency, now using ref
 
   // Don't render on touch devices (basic check)
   if (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) {
@@ -55,25 +71,29 @@ export const CustomCursor: React.FC = () => {
     <div className="fixed inset-0 pointer-events-none z-[9999] mix-blend-exclusion">
       {/* Main Dot */}
       <div
-        className="absolute rounded-full bg-luxury transition-transform duration-100 ease-out"
+        ref={cursorDotRef}
+        className="absolute rounded-full bg-luxury transition-transform duration-100 ease-out will-change-transform"
         style={{
-          left: position.x,
-          top: position.y,
+          left: 0,
+          top: 0,
           width: '8px',
           height: '8px',
-          transform: `translate(-50%, -50%) scale(${isHovering ? 0 : 1})`,
+          // Initial transform
+          transform: 'translate(-50%, -50%)',
         }}
       />
       
       {/* Outer Ring / Trail */}
       <div
-        className="absolute rounded-full border border-luxury transition-all duration-300 ease-out"
+        ref={cursorRingRef}
+        className="absolute rounded-full border border-luxury transition-all duration-300 ease-out will-change-transform"
         style={{
-          left: position.x,
-          top: position.y,
+          left: 0,
+          top: 0,
           width: isBlob ? '100px' : (isHovering ? '64px' : '32px'),
           height: isBlob ? '100px' : (isHovering ? '64px' : '32px'),
-          transform: `translate(-50%, -50%)`,
+          // Initial transform
+          transform: 'translate(-50%, -50%)',
           backgroundColor: isBlob ? '#E8CFA0' : (isHovering ? 'rgba(232, 207, 160, 0.1)' : 'transparent'),
           borderColor: isBlob ? '#E8CFA0' : (isHovering ? 'rgba(232, 207, 160, 0.8)' : 'rgba(232, 207, 160, 0.3)'),
           opacity: isBlob ? 0.8 : 1,

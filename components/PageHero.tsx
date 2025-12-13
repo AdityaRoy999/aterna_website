@@ -17,8 +17,8 @@ export const PageHero: React.FC<PageHeroProps> = ({ title, subtitle, bgImage, ch
         <div className="absolute inset-0 bg-gradient-to-t from-void via-void/40 to-transparent" />
       </div>
 
-      <div className="relative z-10 text-center px-4 max-w-7xl mx-auto mt-24">
-        <h1 className="font-display text-6xl md:text-8xl text-luxury animate-fade-in tracking-tight">
+      <div className="relative z-10 text-center px-4 max-w-7xl mx-auto mt-24 w-full">
+        <h1 className="font-display text-4xl sm:text-5xl md:text-8xl text-luxury animate-fade-in tracking-tight break-words">
           {title}
         </h1>
         {subtitle && (

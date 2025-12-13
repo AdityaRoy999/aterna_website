@@ -19,8 +19,10 @@ import { OrderTracking } from './components/OrderTracking';
 import { Careers } from './components/Careers';
 import { ContactUs } from './components/ContactUs';
 import { Profile } from './components/Profile';
+import { JobApplication } from './components/JobApplication';
 import { useAuth } from './context/AuthContext';
 import { AuthModal } from './components/AuthModal';
+import Lenis from 'lenis';
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState('home');
@@ -34,6 +36,31 @@ const App: React.FC = () => {
   const [navigationParams, setNavigationParams] = useState<any>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const { user } = useAuth();
+
+  // Initialize Lenis for smooth scrolling
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      direction: 'vertical',
+      gestureDirection: 'vertical',
+      smooth: true,
+      mouseMultiplier: 1,
+      smoothTouch: false,
+      touchMultiplier: 2,
+    });
+
+    function raf(time: number) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+
+    requestAnimationFrame(raf);
+
+    return () => {
+      lenis.destroy();
+    };
+  }, []);
 
   // Handle URL parameters for deep linking
   useEffect(() => {
@@ -93,7 +120,9 @@ const App: React.FC = () => {
       case 'tracking':
         return <OrderTracking initialOrderId={navigationParams?.orderId} />;
       case 'careers':
-        return <Careers />;
+        return <Careers onNavigate={handleNavigate} />;
+      case 'apply':
+        return <JobApplication job={navigationParams?.job} onNavigate={handleNavigate} />;
       case 'contact':
         return <ContactUs />;
       case 'profile':

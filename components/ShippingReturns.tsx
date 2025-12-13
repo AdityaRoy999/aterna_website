@@ -1,5 +1,6 @@
 import React from 'react';
 import { PageHero } from './PageHero';
+import shippingBg from '../src_images/shipping_and_returns.png';
 
 const shippingSections = [
   {
@@ -30,7 +31,7 @@ export const ShippingReturns: React.FC = () => {
       <PageHero 
         title="SHIPPING & RETURNS" 
         subtitle="Seamless delivery, global reach."
-        bgImage="https://images.unsplash.com/photo-1566935654340-08703e488d5e?q=80&w=2000&auto=format&fit=crop"
+        bgImage={shippingBg}
       />
       
       <section className="py-24 px-6 max-w-6xl mx-auto">

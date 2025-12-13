@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Sparkles, CreditCard, CheckCircle, ShoppingBag } from 'lucide-react';
+import { MessageSquare, X, Send, Sparkles, CreditCard, CheckCircle, ShoppingBag, Trash2 } from 'lucide-react';
 import { GoogleGenAI, Chat } from "@google/genai";
 import emailjs from '@emailjs/browser';
 import { shopProducts } from './productData';
 import { useBookmarks } from '../context/BookmarkContext';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../src/supabaseClient';
 
 interface Message {
   id: string;
@@ -58,16 +59,13 @@ ORDERING PROTOCOL:
 To place an order, the user MUST be signed in.
 If the user is NOT signed in (check context), politely ask them to sign in first. Do NOT collect details or process orders for guests.
 
-If the user IS signed in, you MUST collect ALL the following information one by one or in groups:
-1. First Name
-2. Last Name
-3. Email Address (for the receipt)
-4. Shipping Address
-5. City
-6. Zip Code
-7. Country
+If the user IS signed in, check the "User Profile" provided in the context.
+1. If the profile contains a full address (Name, Address, City, Zip, Country), ASK the user if they want to use their saved shipping details.
+   - If YES: Use those details immediately.
+   - If NO: Ask for new details.
+2. If the profile is incomplete or missing, ask ONLY for the missing fields.
 
-Once ALL fields are collected and the user confirms the total price, output the "request_payment" JSON.
+Once ALL fields are collected (either from profile or user input) and the user confirms the total price, output the "request_payment" JSON.
 
 JSON ACTIONS:
 Output ONLY the JSON block when performing these actions.
@@ -76,7 +74,7 @@ Output ONLY the JSON block when performing these actions.
 {"action": "show_product", "productName": "Exact Product Name", "variant": "Optional Variant Name"}
 
 2. To Request Payment (Only after collecting ALL details):
-{"action": "request_payment", "product": "Product Name", "price": 1234, "currency": "USD", "customerDetails": {"firstName": "...", "lastName": "...", "email": "...", "address": "...", "city": "...", "zip": "...", "country": "..."}}
+{"action": "request_payment", "product": "Product Name", "variant": "Optional Variant Name", "price": 1234, "currency": "USD", "customerDetails": {"firstName": "...", "lastName": "...", "email": "...", "address": "...", "city": "...", "zip": "...", "country": "..."}}
 `;
 
 // Helper function to parse bold text and lists
@@ -124,6 +122,69 @@ export const Chatbot: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) =>
   const chatSessionRef = useRef<Chat | null>(null);
   const { bookmarkedIds } = useBookmarks();
   const { user } = useAuth();
+  const [userProfile, setUserProfile] = useState<any>(null);
+
+  // Fetch user profile when user logs in
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user) {
+        setUserProfile(null);
+        return;
+      }
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        if (data) setUserProfile(data);
+      } catch (error) {
+        console.error("Error fetching profile for chat", error);
+      }
+    };
+    fetchProfile();
+  }, [user]);
+
+  // Load chat history from localStorage
+  useEffect(() => {
+    const savedMessages = localStorage.getItem('aeterna_chat_history');
+    if (savedMessages) {
+      try {
+        setMessages(JSON.parse(savedMessages));
+      } catch (e) {
+        console.error("Failed to parse chat history", e);
+      }
+    }
+  }, []);
+
+  // Save chat history to localStorage
+  useEffect(() => {
+    if (messages.length > 1) { // Don't save if it's just the welcome message
+      localStorage.setItem('aeterna_chat_history', JSON.stringify(messages));
+    }
+  }, [messages]);
+
+  const clearHistory = () => {
+    localStorage.removeItem('aeterna_chat_history');
+    setMessages([
+      { id: Date.now().toString(), text: "Welcome to AETERNA. I am your personal concierge. How may I assist you with your collection today?", sender: 'ai' }
+    ]);
+    // Reset chat session
+    const initChat = async () => {
+      try {
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        chatSessionRef.current = ai.chats.create({
+          model: 'gemini-2.5-flash',
+          config: {
+            systemInstruction: SYSTEM_INSTRUCTION,
+          },
+        });
+      } catch (error) {
+        console.error("Failed to initialize AETERNA AI", error);
+      }
+    };
+    initChat();
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -224,7 +285,17 @@ export const Chatbot: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) =>
         .map(p => p.name)
         .join(', ');
       
-      const contextMessage = `[System Context: User is logged in: ${user ? 'YES' : 'NO'}. User has bookmarked: ${bookmarkedProducts || 'None'}. Current User Input: "${newUserMsg.text}"]`;
+      const userDetailsContext = userProfile ? `
+User Profile Details (Use these if user confirms):
+- Name: ${userProfile.full_name || 'Not set'}
+- Address: ${userProfile.address_line1 || 'Not set'} ${userProfile.address_line2 || ''}
+- City: ${userProfile.city || 'Not set'}
+- Zip: ${userProfile.postal_code || 'Not set'}
+- Country: ${userProfile.country || 'Not set'}
+- Email: ${user?.email}
+` : "User Profile: None (Ask for all details)";
+
+      const contextMessage = `[System Context: User is logged in: ${user ? 'YES' : 'NO'}. ${userDetailsContext}. User has bookmarked: ${bookmarkedProducts || 'None'}. Current User Input: "${newUserMsg.text}"]`;
 
       const result = await chatSessionRef.current.sendMessage({ message: contextMessage });
       const responseText = result.text;
@@ -248,17 +319,30 @@ export const Chatbot: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) =>
                  return;
                }
 
-               // Find product image
+               // Find product image with specific variant support
                const productObj = shopProducts.find(p => p.name === data.product);
-               const imageUrl = productObj ? productObj.imageUrl : undefined;
+               let imageUrl = productObj ? productObj.imageUrl : undefined;
+               let variantName = data.variant;
+
+               // If a variant is specified, try to find its specific image
+               if (productObj && variantName) {
+                 const variant = productObj.variants?.find(v => 
+                   v.name.toLowerCase().includes(variantName.toLowerCase()) || 
+                   variantName.toLowerCase().includes(v.name.toLowerCase())
+                 );
+                 if (variant) {
+                   imageUrl = variant.imageUrl;
+                   variantName = variant.name; // Normalize name
+                 }
+               }
 
                const paymentMsg: Message = {
                  id: (Date.now() + 1).toString(),
-                 text: `Please confirm your payment of $${data.price.toLocaleString()} for the ${data.product}.`,
+                 text: `Please confirm your payment of $${data.price.toLocaleString()} for the ${data.product}${variantName ? ` (${variantName})` : ''}.`,
                  sender: 'ai',
                  type: 'payment_request',
                  paymentDetails: {
-                   product: data.product,
+                   product: data.product + (variantName ? ` (${variantName})` : ''),
                    price: data.price,
                    currency: data.currency,
                    imageUrl: imageUrl,
@@ -367,6 +451,18 @@ export const Chatbot: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) =>
             data-hover="true"
           >
             <X size={16} />
+          </button>
+        </div>
+
+        {/* Toolbar */}
+        <div className="bg-[#050505] px-3 py-2 border-b border-white/5 flex justify-end">
+          <button 
+            onClick={clearHistory}
+            className="text-[#F2F2F2]/30 hover:text-red-400 transition-colors flex items-center gap-1 text-[10px] uppercase tracking-wider"
+            title="Clear Chat History"
+          >
+            <Trash2 size={12} />
+            <span>Clear History</span>
           </button>
         </div>
 

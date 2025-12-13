@@ -1,18 +1,62 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageHero } from './PageHero';
 import { Mail, Phone, MapPin, Clock, Send, CheckCircle } from 'lucide-react';
+import { CustomSelect } from './CustomInputs';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../src/supabaseClient';
 
 export const ContactUs: React.FC = () => {
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [subject, setSubject] = useState('General Inquiry');
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    message: ''
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        name: user.user_metadata?.full_name || '',
+        email: user.email || ''
+      }));
+    }
+  }, [user]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+
+    try {
+      const { error } = await supabase
+        .from('contact_messages')
+        .insert([
+          {
+            user_id: user?.id || null,
+            name: formData.name,
+            email: formData.email,
+            subject: subject,
+            message: formData.message
+          }
+        ]);
+
+      if (error) throw error;
+
       setIsSuccess(true);
-    }, 1500);
+      setFormData({ name: '', email: '', message: '' });
+    } catch (error) {
+      console.error('Error sending message:', error);
+      alert('Failed to send message. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -124,28 +168,53 @@ export const ContactUs: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <label className="block font-ui text-[10px] uppercase tracking-wider text-offwhite/40 mb-2">Name *</label>
-                        <input required type="text" className="w-full bg-void/50 border-b border-white/10 focus:border-luxury text-offwhite p-3 outline-none transition-colors" />
+                        <input 
+                          required 
+                          type="text" 
+                          name="name"
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-offwhite placeholder:text-white/30 focus:outline-none focus:border-luxury transition-colors" 
+                        />
                       </div>
                       <div>
                         <label className="block font-ui text-[10px] uppercase tracking-wider text-offwhite/40 mb-2">Email *</label>
-                        <input required type="email" className="w-full bg-void/50 border-b border-white/10 focus:border-luxury text-offwhite p-3 outline-none transition-colors" />
+                        <input 
+                          required 
+                          type="email" 
+                          name="email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-offwhite placeholder:text-white/30 focus:outline-none focus:border-luxury transition-colors" 
+                        />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block font-ui text-[10px] uppercase tracking-wider text-offwhite/40 mb-2">Subject *</label>
-                      <select className="w-full bg-void/50 border-b border-white/10 focus:border-luxury text-offwhite p-3 outline-none transition-colors appearance-none">
-                        <option>General Inquiry</option>
-                        <option>Product Information</option>
-                        <option>Order Status</option>
-                        <option>Press & Media</option>
-                        <option>Careers</option>
-                      </select>
+                      <CustomSelect 
+                        label="Subject *"
+                        value={subject}
+                        onChange={setSubject}
+                        options={[
+                          { value: 'General Inquiry', label: 'General Inquiry' },
+                          { value: 'Product Information', label: 'Product Information' },
+                          { value: 'Order Status', label: 'Order Status' },
+                          { value: 'Press & Media', label: 'Press & Media' },
+                          { value: 'Careers', label: 'Careers' }
+                        ]}
+                      />
                     </div>
 
                     <div>
                       <label className="block font-ui text-[10px] uppercase tracking-wider text-offwhite/40 mb-2">Message *</label>
-                      <textarea required rows={5} className="w-full bg-void/50 border-b border-white/10 focus:border-luxury text-offwhite p-3 outline-none transition-colors resize-none"></textarea>
+                      <textarea 
+                        required 
+                        rows={5} 
+                        name="message"
+                        value={formData.message}
+                        onChange={handleInputChange}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-offwhite placeholder:text-white/30 focus:outline-none focus:border-luxury transition-colors resize-none"
+                      ></textarea>
                     </div>
 
                     <div className="pt-4">

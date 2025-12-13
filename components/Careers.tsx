@@ -1,6 +1,7 @@
 import React from 'react';
 import { PageHero } from './PageHero';
 import { ArrowUpRight, CheckCircle, Clock, MapPin } from 'lucide-react';
+import careersBg from '../src_images/careers_bg.png';
 
 const openings = [
   {
@@ -33,13 +34,13 @@ const openings = [
   }
 ];
 
-export const Careers: React.FC = () => {
+export const Careers: React.FC<{ onNavigate?: (page: string, params?: any) => void }> = ({ onNavigate }) => {
   return (
     <div className="min-h-screen bg-void animate-fade-in">
       <PageHero 
         title="CAREERS" 
         subtitle="Join the artisans of eternity."
-        bgImage="https://images.unsplash.com/photo-1503602642458-232111445857?q=80&w=2000&auto=format&fit=crop"
+        bgImage={careersBg}
       />
       
       <section className="py-24 px-6 max-w-6xl mx-auto">
@@ -96,9 +97,12 @@ export const Careers: React.FC = () => {
                 </div>
 
                 <div className="shrink-0 flex items-center mt-4 md:mt-0">
-                  <span className="font-ui text-xs uppercase tracking-widest text-luxury opacity-0 transform -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-500 flex items-center gap-2 group/link">
+                  <button 
+                    onClick={() => onNavigate?.('apply', { job })}
+                    className="font-ui text-xs uppercase tracking-widest text-luxury opacity-0 transform -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-500 flex items-center gap-2 group/link"
+                  >
                     Apply Now <ArrowUpRight size={16} className="transition-transform duration-300 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5" />
-                  </span>
+                  </button>
                 </div>
               </div>
             </div>
