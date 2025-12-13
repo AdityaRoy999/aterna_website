@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Menu, ShoppingBag, X, User } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import appLogo from '../src_images/app_logo.png';
 
 interface HeaderProps {
   onNavigate: (page: string, params?: any) => void;
@@ -75,10 +76,13 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenA
             <div className="flex-1">
               <button
                 onClick={() => onNavigate('home')}
-                className="font-display text-3xl text-luxury tracking-wider hover:opacity-80 transition-all duration-300 hover:scale-105 origin-left"
+                className="flex items-center gap-3 hover:opacity-80 transition-all duration-300 hover:scale-105 origin-left"
                 data-hover="true"
               >
-                AETERNA
+                <img src={appLogo} alt="AETERNA Logo" className="h-8 w-auto md:h-10" />
+                <span className="font-display text-3xl text-luxury tracking-wider hidden md:block">
+                  AETERNA
+                </span>
               </button>
             </div>
 
