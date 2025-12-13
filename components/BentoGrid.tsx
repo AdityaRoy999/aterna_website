@@ -67,19 +67,19 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onNavigate }) => {
       />
 
       {/* Gradient Overlay - Static relative to card */}
-      <div className="absolute inset-0 bg-gradient-to-t from-void via-void/50 to-transparent opacity-80 transition-opacity duration-500 group-hover:opacity-60 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-void via-void/70 to-transparent opacity-90 transition-opacity duration-500 group-hover:opacity-80 pointer-events-none" />
 
       {/* Content */}
-      <div className="absolute inset-0 p-8 flex flex-col justify-end transform translate-y-2 transition-transform duration-500 group-hover:translate-y-0 z-10">
+      <div className="absolute inset-0 p-6 md:p-8 flex flex-col justify-end transform translate-y-2 transition-transform duration-500 group-hover:translate-y-0 z-10">
         <div className="flex justify-between items-end">
           <div>
-            <p className="font-body text-luxury/70 text-xs uppercase tracking-widest mb-2 transition-all duration-300 group-hover:text-luxury">
+            <p className="font-body text-luxury/70 text-[10px] md:text-xs uppercase tracking-widest mb-3 transition-all duration-300 group-hover:text-luxury">
               {product.category}
             </p>
-            <h3 className="font-display text-3xl text-offwhite mb-1">
+            <h3 className="font-display text-2xl md:text-3xl text-offwhite mb-2 leading-tight">
               {product.name}
             </h3>
-            <p className="font-ui font-medium text-lg text-offwhite/80">
+            <p className="font-ui font-medium text-base md:text-lg text-offwhite/80">
               ${product.price.toLocaleString()}
             </p>
           </div>
