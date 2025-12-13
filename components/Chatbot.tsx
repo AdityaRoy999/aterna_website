@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, X, Send, Sparkles, CreditCard, CheckCircle, ShoppingBag, Trash2 } from 'lucide-react';
 import { GoogleGenAI, Chat } from "@google/genai";
 import emailjs from '@emailjs/browser';
+import Lenis from 'lenis';
 import { shopProducts } from './productData';
 import { useBookmarks } from '../context/BookmarkContext';
 import { useAuth } from '../context/AuthContext';
@@ -119,10 +120,42 @@ export const Chatbot: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) =>
   ]);
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const lenisRef = useRef<Lenis | null>(null);
   const chatSessionRef = useRef<Chat | null>(null);
   const { bookmarkedIds } = useBookmarks();
   const { user } = useAuth();
   const [userProfile, setUserProfile] = useState<any>(null);
+
+  // Initialize Lenis for Chatbot
+  useEffect(() => {
+    if (isOpen && chatContainerRef.current) {
+      const lenis = new Lenis({
+        wrapper: chatContainerRef.current,
+        duration: 1.2,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        gestureDirection: 'vertical',
+        smooth: true,
+        mouseMultiplier: 1,
+        smoothTouch: false,
+        touchMultiplier: 2,
+      });
+
+      lenisRef.current = lenis;
+
+      function raf(time: number) {
+        lenis.raf(time);
+        requestAnimationFrame(raf);
+      }
+
+      requestAnimationFrame(raf);
+
+      return () => {
+        lenis.destroy();
+        lenisRef.current = null;
+      };
+    }
+  }, [isOpen]);
 
   // Fetch user profile when user logs in
   useEffect(() => {
@@ -187,8 +220,13 @@ export const Chatbot: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) =>
   };
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (lenisRef.current && messagesEndRef.current) {
+       // Use Lenis to scroll smoothly to the bottom
+       lenisRef.current.scrollTo(messagesEndRef.current, { immediate: false });
+    } else {
+       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isOpen]);
 
   // Initialize Chat Session on Mount
   useEffect(() => {
@@ -467,7 +505,10 @@ User Profile Details (Use these if user confirms):
         </div>
 
         {/* Messages - Reduced Height */}
-        <div className="h-[300px] overflow-y-auto p-4 space-y-4 custom-scrollbar bg-gradient-to-b from-[#050505] to-stone-950/50">
+        <div 
+          ref={chatContainerRef}
+          className="h-[300px] overflow-y-auto p-4 space-y-4 custom-scrollbar bg-gradient-to-b from-[#050505] to-stone-950/50"
+        >
           {messages.map((msg) => (
             <div 
               key={msg.id} 
