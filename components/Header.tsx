@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, ShoppingBag, X, User } from 'lucide-react';
+import { Menu, ShoppingBag, X, User, Heart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import appLogo from '../src_images/app_logo.png';
@@ -120,6 +120,15 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenA
 
             {/* Right Actions */}
             <div className="flex-1 flex justify-end items-center gap-4">
+              <button 
+                onClick={() => onNavigate('wishlist')}
+                className="flex items-center justify-center w-10 h-10 rounded-full bg-white/5 hover:bg-luxury hover:text-void transition-all duration-300 relative group hover:scale-110 active:scale-95"
+                title="Wishlist"
+                data-hover="true"
+              >
+                 <Heart size={18} />
+              </button>
+
               <button 
                 onClick={() => user ? onNavigate('profile') : onOpenAuth()}
                 className="flex items-center justify-center w-10 h-10 rounded-full bg-white/5 hover:bg-luxury hover:text-void transition-all duration-300 relative group hover:scale-110 active:scale-95"

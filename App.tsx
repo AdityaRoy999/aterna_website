@@ -20,6 +20,7 @@ import { Careers } from './components/Careers';
 import { ContactUs } from './components/ContactUs';
 import { Profile } from './components/Profile';
 import { JobApplication } from './components/JobApplication';
+import { Wishlist } from './components/Wishlist';
 import { useAuth } from './context/AuthContext';
 import { AuthModal } from './components/AuthModal';
 import Lenis from 'lenis';
@@ -123,6 +124,8 @@ const App: React.FC = () => {
         return <Careers onNavigate={handleNavigate} />;
       case 'apply':
         return <JobApplication job={navigationParams?.job} onNavigate={handleNavigate} />;
+      case 'wishlist':
+        return <Wishlist onNavigate={handleNavigate} />;
       case 'contact':
         return <ContactUs />;
       case 'profile':
