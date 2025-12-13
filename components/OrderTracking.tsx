@@ -139,24 +139,24 @@ export const OrderTracking: React.FC<OrderTrackingProps> = ({ initialOrderId }) 
           <form onSubmit={handleSearch} className="bg-stone-900/50 p-8 rounded-[2rem] border border-white/5 backdrop-blur-sm shadow-xl">
              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
                 <div className="md:col-span-5">
-                   <label className="block font-ui text-[10px] uppercase tracking-wider text-offwhite/40 mb-2">Order Number</label>
+                   <label className="block font-ui text-[10px] uppercase tracking-wider text-white/40 mb-2">Order Number</label>
                    <input 
                       type="text" 
                       value={orderId} 
                       onChange={(e) => setOrderId(e.target.value)}
                       placeholder="#12345"
-                      className="w-full bg-void/50 border-b border-white/10 focus:border-luxury text-offwhite p-4 outline-none transition-colors placeholder:text-white/10"
+                      className="w-full bg-white/5 border border-white/10 rounded-lg focus:border-[#E8CFA0] text-white p-4 outline-none transition-colors placeholder:text-white/20"
                       disabled={viewState === 'searching'}
                    />
                 </div>
                 <div className="md:col-span-5">
-                   <label className="block font-ui text-[10px] uppercase tracking-wider text-offwhite/40 mb-2">Billing Email</label>
+                   <label className="block font-ui text-[10px] uppercase tracking-wider text-white/40 mb-2">Billing Email</label>
                    <input 
                       type="email" 
                       value={email} 
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="email@example.com"
-                      className="w-full bg-void/50 border-b border-white/10 focus:border-luxury text-offwhite p-4 outline-none transition-colors placeholder:text-white/10"
+                      className="w-full bg-white/5 border border-white/10 rounded-lg focus:border-[#E8CFA0] text-white p-4 outline-none transition-colors placeholder:text-white/20"
                       disabled={viewState === 'searching'}
                    />
                 </div>
