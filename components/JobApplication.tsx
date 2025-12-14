@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { PageHero } from './PageHero';
-import { Upload, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { Upload, CheckCircle, AlertCircle } from 'lucide-react';
+import { X } from '@/components/ui/icons/x';
 import { supabase } from '../src/supabaseClient';
 
 interface JobApplicationProps {
@@ -276,7 +277,7 @@ export const JobApplication: React.FC<JobApplicationProps> = ({ job, onNavigate 
                         }}
                         className="p-1 hover:bg-luxury/20 rounded-full ml-2"
                       >
-                        <X size={16} />
+                        <X size={16} animateOnHover />
                       </button>
                     </div>
                   ) : (

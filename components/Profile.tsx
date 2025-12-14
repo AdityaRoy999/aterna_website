@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { supabase } from '../src/supabaseClient';
-import { User, Package, RotateCcw, CreditCard, MapPin, LogOut, Loader, CheckCircle, AlertCircle } from 'lucide-react';
+ import { User, Package, RotateCcw, CreditCard, MapPin, LogOut, Loader, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface ProfileData {
   full_name: string;
@@ -73,6 +73,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
       if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "no rows returned"
 
       if (data) {
+        console.log('Fetched Profile Data:', data); // Debugging
         setProfile({ ...profile, ...data, email: user?.email || '' });
       } else {
         // If no profile exists yet, just set email
@@ -157,6 +158,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
               <TabButton id="profile" icon={User} label="Profile" />
               <TabButton id="orders" icon={Package} label="Orders" />
               <TabButton id="returns" icon={RotateCcw} label="Returns" />
+
               <button
                 onClick={async () => {
                   clearLocalCart();
@@ -302,21 +304,35 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
                   ) : (
                     <div className="space-y-4">
                       {orders.map(order => (
-                        <div key={order.id} className="bg-white/5 rounded-xl p-6 border border-white/5 hover:border-luxury/30 transition-colors">
+                        <div key={order.id} className="bg-white/5 border border-white/10 rounded-xl p-6">
                           <div className="flex justify-between items-start mb-4">
                             <div>
-                              <p className="text-luxury font-display text-lg">#{order.id.slice(0, 8)}</p>
-                              <p className="text-white/40 text-sm">{new Date(order.created_at).toLocaleDateString()}</p>
+                              <p className="text-xs text-white/40 uppercase tracking-widest mb-1">Order ID</p>
+                              <p className="font-mono text-sm text-white/80">{order.id.slice(0, 8)}...</p>
                             </div>
-                            <span className={`px-3 py-1 rounded-full text-xs uppercase tracking-widest ${
-                              order.status === 'delivered' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
-                            }`}>
-                              {order.status}
-                            </span>
+                            <div className="text-right">
+                              <p className="text-xs text-white/40 uppercase tracking-widest mb-1">Date</p>
+                              <p className="text-sm text-white/80">{new Date(order.created_at).toLocaleDateString()}</p>
+                            </div>
                           </div>
-                          <div className="flex justify-between items-center border-t border-white/5 pt-4">
-                            <p className="text-white/60 text-sm">Total Amount</p>
-                            <p className="text-xl font-display text-white">${order.total_amount.toLocaleString()}</p>
+                          <div className="flex justify-between items-center pt-4 border-t border-white/5">
+                            <div>
+                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium uppercase tracking-wider ${
+                                order.status === 'delivered' ? 'bg-green-500/10 text-green-400' :
+                                ['shipped', 'out_for_delivery'].includes(order.status) ? 'bg-blue-500/10 text-blue-400' :
+                                order.status === 'cancelled' ? 'bg-red-500/10 text-red-400' :
+                                'bg-yellow-500/10 text-yellow-400'
+                              }`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${
+                                  order.status === 'delivered' ? 'bg-green-400' :
+                                  ['shipped', 'out_for_delivery'].includes(order.status) ? 'bg-blue-400' :
+                                  order.status === 'cancelled' ? 'bg-red-400' :
+                                  'bg-yellow-400'
+                                }`} />
+                                {order.status.replace(/_/g, ' ')}
+                              </span>
+                            </div>
+                            <p className="font-display text-xl text-luxury">${order.total_amount.toLocaleString()}</p>
                           </div>
                         </div>
                       ))}

@@ -1,23 +1,23 @@
 import { Product } from '../types';
 
-import clockGold from '../src_images/clock_gold.png';
-import clockSilver from '../src_images/clock_silver.png';
-import clockOynx from '../src_images/clock_oynx.png';
-import channel50 from '../src_images/channel_50.png';
-import channel100 from '../src_images/channel_100.png';
-import channel200 from '../src_images/channel_200.png';
-import goldAbstract from '../src_images/gold_abstract.png';
-import noirStan from '../src_images/noir_stan.png';
-import noirMatte from '../src_images/noir_matte.png';
-import goldChrono from '../src_images/gold_chrono.png';
-import silverChrono from '../src_images/silver_chrono.png';
-import oynxChrono from '../src_images/oynx_chrono.png';
-import amb50 from '../src_images/amb50.png';
-import amb100 from '../src_images/amb100.png';
-import amb200 from '../src_images/amb200.png';
-import pearlWhite from '../src_images/pearl_white.png';
-import pearlGold from '../src_images/pearl_gold.png';
-import pink from '../src_images/pink.png';
+const clockGold = '/images/clock_gold.png';
+const clockSilver = '/images/clock_silver.png';
+const clockOynx = '/images/clock_oynx.png';
+const channel50 = '/images/channel_50.png';
+const channel100 = '/images/channel_100.png';
+const channel200 = '/images/channel_200.png';
+const goldAbstract = '/images/gold_abstract.png';
+const noirStan = '/images/noir_stan.png';
+const noirMatte = '/images/noir_matte.png';
+const goldChrono = '/images/gold_chrono.png';
+const silverChrono = '/images/silver_chrono.png';
+const oynxChrono = '/images/oynx_chrono.png';
+const amb50 = '/images/amb50.png';
+const amb100 = '/images/amb100.png';
+const amb200 = '/images/amb200.png';
+const pearlWhite = '/images/pearl_white.png';
+const pearlGold = '/images/pearl_gold.png';
+const pink = '/images/pink.png';
 
 export const shopProducts: Product[] = [
   {

@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Product } from '../types';
 import { ArrowUpRight } from 'lucide-react';
 import { ParallaxBackground } from './ParallaxBackground';
 
-import clockGold from '../src_images/clock_gold.png';
-import noirStan from '../src_images/noir_stan.png';
+const clockGold = '/images/clock_gold.png';
+const noirStan = '/images/noir_stan.png';
 
 const products: Product[] = [
   {
@@ -45,9 +45,10 @@ const products: Product[] = [
 interface ProductCardProps {
   product: Product;
   onNavigate: (page: string, params?: any) => void;
+  index: number;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, onNavigate }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, onNavigate, index }) => {
   const handleNavigate = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     onNavigate('shop', { productId: product.id });
@@ -56,7 +57,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onNavigate }) => {
   return (
     <div 
       onClick={handleNavigate}
-      className={`group relative overflow-hidden rounded-[2rem] bg-stone-900 border border-white/5 ${product.span || 'col-span-1'} min-h-[300px] cursor-pointer`}
+      className={`bento-card group relative overflow-hidden rounded-[2rem] bg-stone-900 border border-white/5 ${product.span || 'col-span-1'} min-h-[300px] cursor-pointer`}
       data-hover="true"
     >
       {/* Background Image Wrapper for Parallax */}
@@ -109,16 +110,18 @@ interface BentoGridProps {
 }
 
 export const BentoGrid: React.FC<BentoGridProps> = ({ onNavigate }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
   return (
-    <section className="py-24 px-4 bg-void relative z-20">
+    <section ref={containerRef} className="py-24 px-4 bg-void relative z-20">
       <div className="container mx-auto">
         <div className="flex items-end justify-between mb-12 px-2">
-          <h2 className="font-display text-4xl md:text-5xl text-offwhite">
+          <h2 className="bento-title font-display text-4xl md:text-5xl text-offwhite">
             Curated <span className="text-muted italic font-script">Essentials</span>
           </h2>
           <button 
             onClick={() => onNavigate('collections')}
-            className="hidden md:block font-ui text-sm text-luxury hover:text-white transition-colors uppercase tracking-widest border-b border-luxury/30 pb-1" 
+            className="bento-btn hidden md:block font-ui text-sm text-luxury hover:text-white transition-colors uppercase tracking-widest border-b border-luxury/30 pb-1" 
             data-hover="true"
           >
             View All Collection
@@ -126,8 +129,8 @@ export const BentoGrid: React.FC<BentoGridProps> = ({ onNavigate }) => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 auto-rows-[300px] md:auto-rows-[350px]">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} onNavigate={onNavigate} />
+          {products.map((product, index) => (
+            <ProductCard key={product.id} product={product} onNavigate={onNavigate} index={index} />
           ))}
         </div>
       </div>

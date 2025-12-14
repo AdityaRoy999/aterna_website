@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowRight, Instagram, Twitter, Facebook, Linkedin, Check, AlertCircle, ArrowUp } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Instagram, Twitter, Facebook, Linkedin, AlertCircle, ArrowUp } from 'lucide-react';
+import { Check } from '@/components/ui/icons/check';
+import { ArrowRight } from '@/components/ui/icons/arrow-right';
 
 interface FooterProps {
   onNavigate: (page: string, params?: any) => void;
@@ -32,6 +34,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   const [subscriptionStatus, setSubscriptionStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const containerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -101,14 +104,14 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   };
 
   return (
-    <footer className="bg-void border-t border-white/5 pt-32 pb-8 relative overflow-hidden">
+    <footer ref={containerRef} className="bg-void border-t border-white/5 pt-32 pb-8 relative overflow-hidden">
       {/* Background Ambient Glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-64 bg-luxury/5 blur-[120px] pointer-events-none rounded-full" />
 
       <div className="container mx-auto px-6 relative z-10">
         
         {/* Top Section: Newsletter & Socials */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-24 gap-12">
+        <div className="footer-top flex flex-col lg:flex-row justify-between items-start lg:items-end mb-24 gap-12">
           <div className="max-w-xl w-full">
             <h2 className="font-display text-5xl md:text-6xl text-offwhite mb-6 leading-tight">
               Join the <span className="text-luxury italic font-script">Inner Circle</span>
@@ -151,9 +154,14 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               >
                 <span className="sr-only">Subscribe</span>
                 {subscriptionStatus === 'success' ? (
-                  <Check size={24} className="animate-scale-in" />
+                  <Check size={24} className="animate-scale-in" animate />
                 ) : (
-                  <ArrowRight size={24} className="transform transition-transform duration-300 group-focus-within:translate-x-1 group-hover:translate-x-1" />
+                  <ArrowRight 
+                    size={24} 
+                    className="transform transition-transform duration-300 group-focus-within:translate-x-1 group-hover:translate-x-1" 
+                    animation="pointing"
+                    animateOnHover
+                  />
                 )}
               </button>
               
@@ -191,7 +199,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-20" />
 
         {/* Middle Section: Links */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-12 lg:gap-8 mb-24">
+        <div className="footer-links grid grid-cols-2 md:grid-cols-4 gap-12 lg:gap-8 mb-24">
           <div className="col-span-2 md:col-span-1">
              <h3 className="font-display text-3xl text-offwhite mb-6">AETERNA</h3>
              <p className="font-body text-offwhite/40 text-sm leading-relaxed max-w-xs">
@@ -232,7 +240,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         </div>
 
         {/* Bottom Copyright Section */}
-        <div className="flex flex-col md:flex-row justify-between items-center border-t border-white/5 pt-8 pb-4 relative z-20">
+        <div className="footer-bottom flex flex-col md:flex-row justify-between items-center border-t border-white/5 pt-8 pb-4 relative z-20">
           <p className="font-body text-xs text-offwhite/30 uppercase tracking-widest order-2 md:order-1 mt-4 md:mt-0">
             © 2025 AETERNA Luxury Holdings.
           </p>
@@ -256,7 +264,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
       </div>
 
       {/* Massive Watermark - Absolute Positioned at Bottom */}
-      <div className="absolute bottom-0 left-0 w-full flex justify-center overflow-hidden pointer-events-none select-none opacity-20 z-0">
+      <div className="footer-watermark absolute bottom-0 left-0 w-full flex justify-center overflow-hidden pointer-events-none select-none opacity-20 z-0">
          <span className="font-display text-[20vw] leading-none text-transparent bg-clip-text bg-gradient-to-b from-white/10 to-transparent tracking-tighter transform translate-y-[35%]">
            AETERNA
          </span>

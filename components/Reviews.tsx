@@ -175,8 +175,13 @@ export const Reviews: React.FC<ReviewsProps> = ({ productId }) => {
         ) : reviews.length === 0 ? (
           <div className="text-center py-8 text-white/40">No reviews yet. Be the first to review!</div>
         ) : (
-          reviews.map((review) => (
-            <div key={review.id} className="bg-white/5 rounded-xl p-6 border border-white/5">
+          reviews.map((review, index) => (
+            <div 
+              key={review.id} 
+              className="bg-white/5 rounded-xl p-6 border border-white/5"
+              data-aos="fade-up"
+              data-aos-delay={index * 50}
+            >
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-luxury">

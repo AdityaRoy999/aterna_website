@@ -7,25 +7,21 @@ export const CustomCursor: React.FC = () => {
   const [isBlob, setIsBlob] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   
-  // Use refs for state accessed inside the event listener to avoid re-binding
-  const isHoveringRef = useRef(false);
-
-  // Sync ref with state
-  useEffect(() => {
-    isHoveringRef.current = isHovering;
-  }, [isHovering]);
+  // Target positions
+  const mouseX = useRef(0);
+  const mouseY = useRef(0);
+  
+  // Current positions
+  const dotX = useRef(0);
+  const dotY = useRef(0);
+  const ringX = useRef(0);
+  const ringY = useRef(0);
 
   useEffect(() => {
     const updateCursor = (e: MouseEvent) => {
       if (!isVisible) setIsVisible(true);
-      
-      // Direct DOM manipulation for performance
-      if (cursorDotRef.current) {
-        cursorDotRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) translate(-50%, -50%) scale(${isHoveringRef.current ? 0 : 1})`;
-      }
-      if (cursorRingRef.current) {
-        cursorRingRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) translate(-50%, -50%)`;
-      }
+      mouseX.current = e.clientX;
+      mouseY.current = e.clientY;
     };
 
     const handleMouseOver = (e: MouseEvent) => {
@@ -60,7 +56,39 @@ export const CustomCursor: React.FC = () => {
       window.removeEventListener('mousemove', updateCursor);
       document.removeEventListener('mouseover', handleMouseOver);
     };
-  }, [isVisible]); // Removed isHovering dependency, now using ref
+  }, [isVisible]);
+
+  // Animation loop
+  useEffect(() => {
+    let animationFrameId: number;
+
+    const animate = () => {
+      // Lerp for smooth movement
+      // Dot follows quickly
+      dotX.current += (mouseX.current - dotX.current) * 0.5;
+      dotY.current += (mouseY.current - dotY.current) * 0.5;
+
+      // Ring follows slowly
+      ringX.current += (mouseX.current - ringX.current) * 0.15;
+      ringY.current += (mouseY.current - ringY.current) * 0.15;
+
+      if (cursorDotRef.current) {
+        cursorDotRef.current.style.transform = `translate(${dotX.current}px, ${dotY.current}px) translate(-50%, -50%)`;
+      }
+      
+      if (cursorRingRef.current) {
+        cursorRingRef.current.style.transform = `translate(${ringX.current}px, ${ringY.current}px) translate(-50%, -50%)`;
+      }
+
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
 
   // Don't render on touch devices (basic check)
   if (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) {
@@ -72,31 +100,30 @@ export const CustomCursor: React.FC = () => {
       {/* Main Dot */}
       <div
         ref={cursorDotRef}
-        className="absolute rounded-full bg-luxury transition-transform duration-100 ease-out will-change-transform"
+        className="absolute rounded-full bg-luxury will-change-transform"
         style={{
           left: 0,
           top: 0,
           width: '8px',
           height: '8px',
-          // Initial transform
-          transform: 'translate(-50%, -50%)',
+          opacity: isVisible && !isHovering ? 1 : 0,
+          transition: 'opacity 0.3s ease-out'
         }}
       />
       
       {/* Outer Ring / Trail */}
       <div
         ref={cursorRingRef}
-        className="absolute rounded-full border border-luxury transition-all duration-300 ease-out will-change-transform"
+        className="absolute rounded-full border will-change-transform"
         style={{
           left: 0,
           top: 0,
           width: isBlob ? '100px' : (isHovering ? '64px' : '32px'),
           height: isBlob ? '100px' : (isHovering ? '64px' : '32px'),
-          // Initial transform
-          transform: 'translate(-50%, -50%)',
           backgroundColor: isBlob ? '#E8CFA0' : (isHovering ? 'rgba(232, 207, 160, 0.1)' : 'transparent'),
           borderColor: isBlob ? '#E8CFA0' : (isHovering ? 'rgba(232, 207, 160, 0.8)' : 'rgba(232, 207, 160, 0.3)'),
-          opacity: isBlob ? 0.8 : 1,
+          opacity: isVisible ? (isBlob ? 0.8 : 1) : 0,
+          transition: 'width 0.3s ease-out, height 0.3s ease-out, background-color 0.3s ease-out, border-color 0.3s ease-out, opacity 0.3s ease-out'
         }}
       />
     </div>

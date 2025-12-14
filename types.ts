@@ -2,6 +2,7 @@ export interface ProductVariant {
   name: string;
   imageUrl: string;
   colorCode?: string; // For color swatches
+  description?: string;
 }
 
 export interface Product {
@@ -10,6 +11,8 @@ export interface Product {
   price: number;
   category: string;
   imageUrl: string;
+  description?: string;
+  color?: string;
   // Fix: Changed from specific literals to string to support combined/responsive classes
   span?: string;
   isNew?: boolean;

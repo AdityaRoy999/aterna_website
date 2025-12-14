@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Minus, Trash2, ArrowRight, ShoppingBag } from 'lucide-react';
+import { Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
+import { ArrowRight } from '@/components/ui/icons/arrow-right';
+import { X } from '@/components/ui/icons/x';
 import { useCart } from '../context/CartContext';
 import { CartItem } from '../types';
 
@@ -140,7 +142,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ onCheckout }) => {
             className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-offwhite transition-colors active:scale-90"
             data-hover="true"
           >
-            <X size={20} />
+            <X size={20} animateOnHover />
           </button>
         </div>
 
@@ -191,7 +193,12 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ onCheckout }) => {
             data-hover="true"
           >
             Proceed to Checkout
-            <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+            <ArrowRight 
+              size={16} 
+              className="transition-transform group-hover:translate-x-1" 
+              animation="pointing"
+              animateOnHover
+            />
           </button>
         </div>
       </div>

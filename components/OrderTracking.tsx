@@ -3,7 +3,7 @@ import { PageHero } from './PageHero';
 import { supabase } from '../src/supabaseClient';
 import { Search, Package, Truck, CheckCircle, Clock, MapPin, AlertCircle } from 'lucide-react';
 
-import orderPlacedBg from '../src_images/order_placed.png';
+const orderPlacedBg = '/images/order_placed.png';
 
 interface OrderTrackingProps {
   initialOrderId?: string;
@@ -76,13 +76,29 @@ export const OrderTracking: React.FC<OrderTrackingProps> = ({ initialOrderId }) 
 
   // Helper to determine step status based on DB status
   const getStepStatus = (stepTitle: string, currentStatus: string) => {
-    const statusOrder = ['Processing', 'Dispatched', 'Out for Delivery', 'Delivered'];
-    const currentIndex = statusOrder.indexOf(currentStatus);
-    const stepIndex = statusOrder.indexOf(stepTitle);
+    const statusMap: Record<string, number> = {
+      'pending': 0,
+      'processing': 1,
+      'shipped': 2,
+      'out_for_delivery': 3,
+      'delivered': 4,
+      'cancelled': -1
+    };
+
+    const stepMap: Record<string, number> = {
+      'Processing': 1,
+      'Dispatched': 2,
+      'Out for Delivery': 3,
+      'Delivered': 4
+    };
+
+    const currentLevel = statusMap[currentStatus?.toLowerCase()] || 0;
+    const stepLevel = stepMap[stepTitle] || 0;
+
+    if (currentStatus === 'cancelled') return 'pending';
     
-    if (currentIndex === -1) return 'pending'; // Unknown status
-    if (stepIndex < currentIndex) return 'completed';
-    if (stepIndex === currentIndex) return 'current';
+    if (stepLevel < currentLevel) return 'completed';
+    if (stepLevel === currentLevel) return 'current';
     return 'pending';
   };
 
@@ -140,7 +156,7 @@ export const OrderTracking: React.FC<OrderTrackingProps> = ({ initialOrderId }) 
       <section className="py-24 px-6 max-w-4xl mx-auto">
         
         {/* Search Form */}
-        <div className={`transition-all duration-700 ${viewState === 'result' ? 'mb-16 opacity-50 hover:opacity-100' : 'mb-0 opacity-100'}`}>
+        <div className={`transition-all duration-700 ${viewState === 'result' ? 'mb-16 opacity-50 hover:opacity-100' : 'mb-0 opacity-100'}`} data-aos="fade-up">
           <form onSubmit={handleSearch} className="bg-stone-900/50 p-8 rounded-[2rem] border border-white/5 backdrop-blur-sm shadow-xl">
              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
                 <div className="md:col-span-5">
@@ -193,7 +209,7 @@ export const OrderTracking: React.FC<OrderTrackingProps> = ({ initialOrderId }) 
 
         {/* Results */}
         {viewState === 'result' && orderData && (
-          <div className="animate-slide-up">
+          <div className="animate-slide-up" data-aos="fade-up">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 border-b border-white/5 pb-8">
                <div>
                   <h2 className="font-display text-3xl text-offwhite mb-2">Order #{orderId}</h2>

@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { PageHero } from './PageHero';
 import { ArrowUpRight } from 'lucide-react';
 import { ParallaxBackground } from './ParallaxBackground';
 
-import maisonBg from '../src_images/maison.png';
+const maisonBg = '/images/maison.png';
 
 export const Maison: React.FC = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
   return (
-    <div className="min-h-screen bg-void animate-fade-in">
+    <div ref={containerRef} className="min-h-screen bg-void animate-fade-in">
       <PageHero 
         title="THE MAISON" 
         subtitle="Crafting legacy since 1925."
@@ -18,7 +20,9 @@ export const Maison: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-min">
           
           {/* Block 1: Our Heritage (Tall Vertical, Left) */}
-          <div className="md:col-span-4 md:row-span-2 bg-white/5 rounded-[2rem] p-10 border border-white/5 flex flex-col justify-center hover:bg-white/10 hover:border-white/20 transition-all duration-500 group">
+          <div 
+            className="maison-block md:col-span-4 md:row-span-2 bg-white/5 rounded-[2rem] p-10 border border-white/5 flex flex-col justify-center hover:bg-white/10 hover:border-white/20 transition-all duration-500 group"
+          >
             <h2 className="font-display text-4xl text-luxury mb-8 group-hover:translate-x-1 transition-transform duration-500">OUR HERITAGE</h2>
             <div className="space-y-6 font-body text-offwhite/70 leading-relaxed text-sm md:text-base group-hover:text-offwhite/90 transition-colors duration-500">
               <p>
@@ -34,7 +38,9 @@ export const Maison: React.FC = () => {
           </div>
 
           {/* Block 2: Workbench (Square, Top Right) */}
-          <div className="md:col-span-4 min-h-[300px] relative overflow-hidden rounded-[2rem] border border-white/5 group cursor-pointer">
+          <div 
+            className="maison-block md:col-span-4 min-h-[300px] relative overflow-hidden rounded-[2rem] border border-white/5 group cursor-pointer"
+          >
              <ParallaxBackground 
                 src="https://images.unsplash.com/photo-1589254065878-42c9da997008?q=80&w=1000&auto=format&fit=crop" 
                 alt="Watchmaker Workbench"
@@ -44,7 +50,9 @@ export const Maison: React.FC = () => {
           </div>
 
            {/* Decorative Filler - Material Detail */}
-           <div className="md:col-span-4 min-h-[300px] relative overflow-hidden rounded-[2rem] border border-white/5 group cursor-pointer">
+           <div 
+             className="maison-block md:col-span-4 min-h-[300px] relative overflow-hidden rounded-[2rem] border border-white/5 group cursor-pointer"
+           >
              <ParallaxBackground 
                 src="https://images.unsplash.com/photo-1618331835717-801e976710b2?q=80&w=1000&auto=format&fit=crop" 
                 alt="Gold Texture"
@@ -56,7 +64,9 @@ export const Maison: React.FC = () => {
           </div>
 
           {/* Block 3: Craftsmanship (Wide Horizontal, Bottom) */}
-          <div className="md:col-span-8 bg-stone-900 rounded-[2rem] border border-white/5 overflow-hidden flex flex-col md:flex-row min-h-[300px] group hover:border-white/20 transition-colors duration-500">
+          <div 
+            className="maison-block md:col-span-8 bg-stone-900 rounded-[2rem] border border-white/5 overflow-hidden flex flex-col md:flex-row min-h-[300px] group hover:border-white/20 transition-colors duration-500"
+          >
              <div className="flex-1 p-10 flex flex-col justify-center relative z-10">
                 <h2 className="font-display text-3xl text-offwhite mb-4">CRAFTSMANSHIP</h2>
                 <p className="font-body text-offwhite/60 leading-relaxed mb-6">

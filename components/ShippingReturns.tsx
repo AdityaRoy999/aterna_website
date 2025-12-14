@@ -1,6 +1,6 @@
 import React from 'react';
 import { PageHero } from './PageHero';
-import shippingBg from '../src_images/shipping_and_returns.png';
+const shippingBg = '/images/shipping_and_returns.png';
 
 const shippingSections = [
   {

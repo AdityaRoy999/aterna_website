@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Mail, Lock, Loader, User } from 'lucide-react';
+import { Mail, Lock, Loader, User } from 'lucide-react';
+import { X } from '@/components/ui/icons/x';
 import { supabase } from '../src/supabaseClient';
 
 interface AuthModalProps {
@@ -70,10 +71,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
   const handleGoogleLogin = async () => {
     try {
-      // Determine the correct redirect URL based on the environment
-      const redirectTo = window.location.hostname === 'localhost'
-        ? 'http://localhost:3000' // Explicitly set local URL
-        : 'https://aeterna-lyart.vercel.app'; // Explicitly set production URL
+      const redirectTo = window.location.origin;
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -101,7 +99,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           onClick={onClose}
           className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors"
         >
-          <X size={20} />
+          <X size={20} animateOnHover />
         </button>
 
         <div className="text-center mb-8">

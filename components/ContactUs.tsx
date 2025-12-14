@@ -71,7 +71,7 @@ export const ContactUs: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24">
           
           {/* Contact Details */}
-          <div className="lg:col-span-5 space-y-12">
+          <div className="lg:col-span-5 space-y-12" data-aos="fade-right">
             <div>
               <h2 className="font-display text-3xl text-offwhite mb-6">Headquarters</h2>
               <div className="space-y-6">
@@ -144,7 +144,7 @@ export const ContactUs: React.FC = () => {
           </div>
 
           {/* Inquiry Form */}
-          <div className="lg:col-span-7">
+          <div className="lg:col-span-7" data-aos="fade-left">
              <div className="bg-stone-900/50 p-8 md:p-12 rounded-[2rem] border border-white/5 backdrop-blur-sm shadow-xl">
                 {isSuccess ? (
                   <div className="h-full flex flex-col items-center justify-center text-center py-20 animate-fade-in">

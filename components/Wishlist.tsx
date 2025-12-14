@@ -3,7 +3,8 @@ import { PageHero } from './PageHero';
 import { useBookmarks } from '../context/BookmarkContext';
 import { useCart } from '../context/CartContext';
 import { shopProducts } from './productData';
-import { Trash2, ShoppingBag, ArrowRight, Heart } from 'lucide-react';
+import { Trash2, ShoppingBag, Heart } from 'lucide-react';
+import { ArrowRight } from '@/components/ui/icons/arrow-right';
 
 interface WishlistProps {
   onNavigate: (page: string, params?: any) => void;
@@ -41,7 +42,7 @@ export const Wishlist: React.FC<WishlistProps> = ({ onNavigate }) => {
               onClick={() => onNavigate('shop')}
               className="bg-luxury text-void px-8 py-3 rounded-lg font-ui font-bold text-sm uppercase tracking-widest hover:bg-white transition-all duration-300 flex items-center gap-2"
             >
-              Explore Collection <ArrowRight size={16} />
+              Explore Collection <ArrowRight size={16} animation="pointing" animateOnHover />
             </button>
           </div>
         ) : (
@@ -92,7 +93,7 @@ export const Wishlist: React.FC<WishlistProps> = ({ onNavigate }) => {
                     onClick={() => onNavigate('shop', { productId: product.id })}
                     className="mt-4 text-xs font-ui uppercase tracking-widest text-offwhite/40 hover:text-luxury transition-colors flex items-center gap-2"
                   >
-                    View Details <ArrowRight size={12} />
+                    View Details <ArrowRight size={12} animation="pointing" animateOnHover />
                   </button>
                 </div>
               </div>

@@ -1,20 +1,22 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { PageHero } from './PageHero';
 import { ArrowUpRight } from 'lucide-react';
 import { ParallaxBackground } from './ParallaxBackground';
 
-import collectionsBg from '../src_images/collections.png';
-import royalChrono from '../src_images/royal_chrono.png';
-import channel200 from '../src_images/channel_200.png';
-import pearlWhite from '../src_images/pearl_white.png';
+const collectionsBg = '/images/collections.png';
+const royalChrono = '/images/royal_chrono.png';
+const channel200 = '/images/channel_200.png';
+const pearlWhite = '/images/pearl_white.png';
 
 interface CollectionsProps {
   onNavigate: (page: string, params?: any) => void;
 }
 
 export const Collections: React.FC<CollectionsProps> = ({ onNavigate }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
   return (
-    <div className="min-h-screen bg-void/50 animate-fade-in relative z-10">
+    <div ref={containerRef} className="min-h-screen bg-void/50 relative z-10">
       <PageHero 
         title="COLLECTIONS" 
         bgImage={collectionsBg}
@@ -26,7 +28,7 @@ export const Collections: React.FC<CollectionsProps> = ({ onNavigate }) => {
           {/* Block 1: Timepieces (Large Square, Left) */}
           <div 
             onClick={() => onNavigate('shop')}
-            className="md:col-span-8 md:row-span-2 relative group overflow-hidden rounded-[2rem] border border-white/5 bg-stone-900 min-h-[400px] cursor-pointer hover:shadow-2xl hover:shadow-luxury/5 transition-all duration-700"
+            className="collection-card md:col-span-8 md:row-span-2 relative group overflow-hidden rounded-[2rem] border border-white/5 bg-stone-900 min-h-[400px] cursor-pointer hover:shadow-2xl hover:shadow-luxury/5 transition-all duration-700"
             data-hover="true"
           >
             <ParallaxBackground 
@@ -49,7 +51,7 @@ export const Collections: React.FC<CollectionsProps> = ({ onNavigate }) => {
           {/* Block 2: Scents (Medium Rectangle, Top Right) */}
           <div 
             onClick={() => onNavigate('shop')}
-            className="md:col-span-4 relative group overflow-hidden rounded-[2rem] border border-white/5 bg-stone-900 min-h-[300px] cursor-pointer hover:shadow-xl hover:border-white/10 transition-all duration-500"
+            className="collection-card md:col-span-4 relative group overflow-hidden rounded-[2rem] border border-white/5 bg-stone-900 min-h-[300px] cursor-pointer hover:shadow-xl hover:border-white/10 transition-all duration-500"
             data-hover="true"
           >
             <ParallaxBackground 
@@ -78,7 +80,7 @@ export const Collections: React.FC<CollectionsProps> = ({ onNavigate }) => {
           {/* Block 3: Adornments (Medium Rectangle, Bottom Right) */}
           <div 
             onClick={() => onNavigate('shop')}
-            className="md:col-span-4 relative group overflow-hidden rounded-[2rem] border border-white/5 bg-stone-900 min-h-[300px] cursor-pointer hover:shadow-xl hover:border-white/10 transition-all duration-500"
+            className="collection-card md:col-span-4 relative group overflow-hidden rounded-[2rem] border border-white/5 bg-stone-900 min-h-[300px] cursor-pointer hover:shadow-xl hover:border-white/10 transition-all duration-500"
             data-hover="true"
           >
             <ParallaxBackground 

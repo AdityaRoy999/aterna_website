@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, ShoppingBag, X, User, Heart } from 'lucide-react';
+import { Menu, ShoppingBag, User, Heart } from 'lucide-react';
+import { X } from '@/components/ui/icons/x';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import appLogo from '../src_images/app_logo.png';
+const appLogo = '/images/app_logo.png';
 
 interface HeaderProps {
   onNavigate: (page: string, params?: any) => void;
@@ -187,7 +188,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenA
             className="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center text-luxury hover:bg-luxury hover:text-void transition-all duration-300 border border-white/10 hover:rotate-90"
             data-hover="true"
           >
-            <X size={28} />
+            <X size={28} animateOnHover />
           </button>
         </div>
 

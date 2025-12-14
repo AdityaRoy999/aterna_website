@@ -100,7 +100,7 @@ export const BookAppointment: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
             
             {/* Intro Text */}
-            <div className="lg:col-span-5">
+            <div className="lg:col-span-5" data-aos="fade-right">
                <h2 className="font-display text-4xl text-offwhite mb-8">Private Consultation</h2>
                <div className="space-y-6 text-offwhite/60 font-body leading-relaxed text-lg">
                  <p>
@@ -135,7 +135,7 @@ export const BookAppointment: React.FC = () => {
             </div>
 
             {/* Form */}
-            <div className="lg:col-span-7">
+            <div className="lg:col-span-7" data-aos="fade-left">
                {!user ? (
                  <div className="bg-stone-900/30 p-8 md:p-12 rounded-[2rem] border border-white/5 backdrop-blur-sm flex flex-col items-center justify-center text-center min-h-[400px]">
                     <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-luxury mb-6">

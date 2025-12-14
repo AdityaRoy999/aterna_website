@@ -1,17 +1,18 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { PageHero } from './PageHero';
-import { ArrowUpRight, ChevronDown, X, ShoppingBag, Star, MessageSquare } from 'lucide-react';
+import { ArrowUpRight, ChevronDown, ShoppingBag, Star, MessageSquare } from 'lucide-react';
+import { X } from '@/components/ui/icons/x';
 import { Product } from '../types';
 import { ParallaxBackground } from './ParallaxBackground';
 import { useCart } from '../context/CartContext';
 import { useBookmarks } from '../context/BookmarkContext';
 import { Reviews } from './Reviews';
+import { supabase } from '../src/supabaseClient';
 
-import { shopProducts } from './productData';
-import shopBg from '../src_images/shop.png';
+// import { shopProducts } from './productData'; // Removed in favor of Supabase
+const shopBg = '/images/shop.png';
 
-const categories = ['All', 'Timepieces', 'Fragrance', 'Jewelry', 'Accessories'];
 type SortOption = 'default' | 'price-asc' | 'price-desc' | 'name-asc';
 
 // Quick View Modal Component
@@ -55,7 +56,7 @@ const QuickViewModal: React.FC<{ product: Product; onClose: () => void }> = ({ p
           className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-offwhite transition-colors backdrop-blur-md"
           data-hover="true"
         >
-          <X size={16} />
+          <X size={16} animateOnHover />
         </button>
 
         {/* Left Column: Image */}
@@ -122,7 +123,7 @@ const QuickViewModal: React.FC<{ product: Product; onClose: () => void }> = ({ p
                  </p>
 
                  <p className="font-body text-offwhite/60 leading-relaxed text-sm mb-6">
-                   Meticulously crafted to embody the essence of AETERNA. This piece represents a harmonious blend of traditional artistry and contemporary design.
+                   {currentVariant?.description || product.description || "Meticulously crafted to embody the essence of AETERNA. This piece represents a harmonious blend of traditional artistry and contemporary design."}
                  </p>
 
                  {/* Visual Variants */}
@@ -192,6 +193,8 @@ interface ShopProps {
 }
 
 export const Shop: React.FC<ShopProps> = ({ initialProductId }) => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('All');
   const [sortOption, setSortOption] = useState<SortOption>('default');
   const [isSortOpen, setIsSortOpen] = useState(false);
@@ -199,15 +202,103 @@ export const Shop: React.FC<ShopProps> = ({ initialProductId }) => {
   const [showBookmarkedOnly, setShowBookmarkedOnly] = useState(false);
   const { bookmarkedIds } = useBookmarks();
 
+  // Derive categories from products
+  const categories = useMemo(() => {
+    const uniqueCategories = Array.from(new Set(products.map(p => p.category)));
+    return ['All', ...uniqueCategories.sort()];
+  }, [products]);
+
+  // Fetch products from Supabase
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('*');
+        
+        if (error) throw error;
+
+        if (data) {
+          // Client-side deduplication and merging of variants
+          const productMap = new Map<string, Product>();
+
+          data.forEach(p => {
+            const normalizedName = p.name.trim(); // Normalize name
+            const existing = productMap.get(normalizedName);
+            
+            const currentVariant = {
+              name: p.color || 'Standard',
+              imageUrl: p.image_url,
+              colorCode: '#000000', // Default
+              description: p.description
+            };
+
+            // Parse existing variants from DB (if any)
+            let dbVariants: any[] = [];
+            if (Array.isArray(p.variants)) {
+              dbVariants = p.variants;
+            } else if (typeof p.variants === 'string') {
+              try {
+                dbVariants = JSON.parse(p.variants);
+              } catch (e) {
+                dbVariants = [];
+              }
+            }
+
+            // If this row has no explicit variants but has a color, treat itself as a variant
+            if (dbVariants.length === 0 && p.color) {
+               dbVariants.push(currentVariant);
+            }
+
+            if (existing) {
+              // Merge variants
+              const existingVariants = existing.variants || [];
+              const newVariants = dbVariants.length > 0 ? dbVariants : [currentVariant];
+              
+              // Combine and deduplicate by variant name
+              const combined = [...existingVariants, ...newVariants];
+              const uniqueVariants = Array.from(new Map(combined.map(v => [v.name, v])).values());
+              
+              existing.variants = uniqueVariants;
+              productMap.set(normalizedName, existing);
+            } else {
+              // Create new entry
+              productMap.set(normalizedName, {
+                id: p.id,
+                name: p.name, // Keep original casing for display
+                price: p.price,
+                category: p.category,
+                imageUrl: p.image_url,
+                description: p.description,
+                color: p.color,
+                isNew: p.is_new,
+                variantType: p.variant_type || 'Color',
+                variants: dbVariants.length > 0 ? dbVariants : [currentVariant]
+              });
+            }
+          });
+
+          setProducts(Array.from(productMap.values()));
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
   // Effect to handle initial product selection from navigation params
   useEffect(() => {
-    if (initialProductId) {
-      const product = shopProducts.find(p => p.id === initialProductId);
+    if (initialProductId && products.length > 0) {
+      const product = products.find(p => p.id === initialProductId);
       if (product) {
         setSelectedProduct(product);
       }
     }
-  }, [initialProductId]);
+  }, [initialProductId, products]);
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -222,8 +313,8 @@ export const Shop: React.FC<ShopProps> = ({ initialProductId }) => {
   // Filtering and Sorting Logic
   const filteredProducts = useMemo(() => {
     let filtered = activeCategory === 'All' 
-      ? [...shopProducts] 
-      : shopProducts.filter(p => p.category === activeCategory);
+      ? [...products] 
+      : products.filter(p => p.category === activeCategory);
 
     if (showBookmarkedOnly) {
       filtered = filtered.filter(p => bookmarkedIds.includes(p.id));
@@ -243,7 +334,7 @@ export const Shop: React.FC<ShopProps> = ({ initialProductId }) => {
         break;
     }
     return filtered;
-  }, [activeCategory, sortOption, showBookmarkedOnly, bookmarkedIds]);
+  }, [activeCategory, sortOption, showBookmarkedOnly, bookmarkedIds, products]);
 
   const handleSortChange = (option: SortOption) => {
     setSortOption(option);
@@ -253,6 +344,13 @@ export const Shop: React.FC<ShopProps> = ({ initialProductId }) => {
   return (
     <div className="min-h-screen bg-void/50 animate-fade-in relative z-10">
       
+      {/* Loading State */}
+      {loading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-void/80 backdrop-blur-sm">
+          <div className="w-12 h-12 border-2 border-luxury border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      )}
+
       {/* Quick View Modal */}
       {selectedProduct && (
         <QuickViewModal 
@@ -341,9 +439,10 @@ export const Shop: React.FC<ShopProps> = ({ initialProductId }) => {
             filteredProducts.map((product, index) => (
               <div 
                 key={product.id} 
-                className="group relative animate-slide-up"
-                style={{ animationDelay: `${index * 50}ms` }}
+                className="group relative"
                 data-hover="true"
+                data-aos="fade-up"
+                data-aos-delay={index * 50}
               >
                 <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-stone-900 mb-6">
                   <ParallaxBackground 

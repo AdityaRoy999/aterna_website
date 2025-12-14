@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Sparkles, CreditCard, CheckCircle, ShoppingBag, Trash2 } from 'lucide-react';
+import { MessageSquare, Send, Sparkles, CreditCard, CheckCircle, ShoppingBag, Trash2 } from 'lucide-react';
+import { X } from '@/components/ui/icons/x';
 import { GoogleGenAI, Chat } from "@google/genai";
 import emailjs from '@emailjs/browser';
 import Lenis from 'lenis';
@@ -488,7 +489,7 @@ User Profile Details (Use these if user confirms):
             className="text-[#F2F2F2]/50 hover:text-[#E8CFA0] transition-colors"
             data-hover="true"
           >
-            <X size={16} />
+            <X size={16} animateOnHover />
           </button>
         </div>
 

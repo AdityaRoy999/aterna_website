@@ -1,7 +1,7 @@
 import React from 'react';
 import { PageHero } from './PageHero';
 import { ArrowUpRight, CheckCircle, Clock, MapPin } from 'lucide-react';
-import careersBg from '../src_images/careers_bg.png';
+const careersBg = '/images/careers_bg.png';
 
 const openings = [
   {
@@ -45,7 +45,7 @@ export const Careers: React.FC<{ onNavigate?: (page: string, params?: any) => vo
       
       <section className="py-24 px-6 max-w-6xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-16 mb-24">
-          <div className="md:col-span-5">
+          <div className="md:col-span-5" data-aos="fade-right">
             <h2 className="font-display text-4xl text-offwhite mb-6">The Pursuit of Perfection</h2>
             <div className="w-12 h-px bg-luxury mb-6"></div>
             <p className="font-body text-offwhite/60 leading-relaxed text-lg">
@@ -53,12 +53,12 @@ export const Careers: React.FC<{ onNavigate?: (page: string, params?: any) => vo
             </p>
           </div>
           <div className="md:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div className="bg-stone-900/50 p-8 rounded-2xl border border-white/5 backdrop-blur-sm">
+            <div className="bg-stone-900/50 p-8 rounded-2xl border border-white/5 backdrop-blur-sm" data-aos="fade-up" data-aos-delay="200">
               <CheckCircle className="text-luxury mb-4" size={24} />
               <h3 className="font-display text-xl text-offwhite mb-2">Heritage & Future</h3>
               <p className="font-body text-sm text-offwhite/50">Blending centuries-old techniques with avant-garde innovation.</p>
             </div>
-            <div className="bg-stone-900/50 p-8 rounded-2xl border border-white/5 backdrop-blur-sm">
+            <div className="bg-stone-900/50 p-8 rounded-2xl border border-white/5 backdrop-blur-sm" data-aos="fade-up" data-aos-delay="400">
               <Clock className="text-luxury mb-4" size={24} />
               <h3 className="font-display text-xl text-offwhite mb-2">Timeless Pace</h3>
               <p className="font-body text-sm text-offwhite/50">We value quality over speed. Create work that lasts a lifetime.</p>
@@ -66,13 +66,15 @@ export const Careers: React.FC<{ onNavigate?: (page: string, params?: any) => vo
           </div>
         </div>
 
-        <h3 className="font-ui text-xs uppercase tracking-[0.2em] text-offwhite/40 mb-12">Current Openings</h3>
+        <h3 className="font-ui text-xs uppercase tracking-[0.2em] text-offwhite/40 mb-12" data-aos="fade-in">Current Openings</h3>
 
         <div className="space-y-6">
           {openings.map((job, index) => (
             <div 
               key={index}
               className="group relative bg-stone-900 border border-white/5 p-8 md:p-10 rounded-2xl hover:border-luxury/30 transition-all duration-500 cursor-pointer"
+              data-aos="fade-up"
+              data-aos-delay={index * 100}
             >
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
                 <div>

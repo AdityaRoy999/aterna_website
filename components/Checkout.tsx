@@ -112,8 +112,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onNavigate }) => {
         product_name: item.name,
         quantity: item.quantity,
         price: item.price,
-        variant_name: item.selectedColor,
-        image_url: item.imageUrl
+        variant_name: item.selectedColor
       }));
 
       const { error: itemsError } = await supabase

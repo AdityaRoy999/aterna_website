@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight, Clock, Calendar, Check } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Clock, Calendar } from 'lucide-react';
+import { Check } from '@/components/ui/icons/check';
 
 // --- Types ---
 interface Option {
@@ -85,7 +86,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({ label, options, valu
               className="w-full text-left px-6 py-3 text-sm font-body text-offwhite/70 hover:bg-white/5 hover:text-luxury transition-colors flex justify-between items-center group"
             >
               {opt.label}
-              {value === opt.value && <Check size={14} className="text-luxury" />}
+              {value === opt.value && <Check size={14} className="text-luxury" animate />}
             </button>
           ))}
         </div>
@@ -139,7 +140,7 @@ export const CustomTimePicker: React.FC<CustomTimePickerProps> = ({ label, value
               className="w-full text-left px-6 py-3 text-sm font-body text-offwhite/70 hover:bg-white/5 hover:text-luxury transition-colors flex justify-between items-center"
             >
               {time}
-              {value === time && <Check size={14} className="text-luxury" />}
+              {value === time && <Check size={14} className="text-luxury" animate />}
             </button>
           ))}
         </div>

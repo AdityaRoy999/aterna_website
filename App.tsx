@@ -21,12 +21,37 @@ import { ContactUs } from './components/ContactUs';
 import { Profile } from './components/Profile';
 import { JobApplication } from './components/JobApplication';
 import { Wishlist } from './components/Wishlist';
+import { AdminDashboard } from './admin/AdminDashboard';
 import { useAuth } from './context/AuthContext';
 import { AuthModal } from './components/AuthModal';
 import Lenis from 'lenis';
+import AOS from 'aos';
+import 'aos/dist/aos.css';
 
 const App: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState('home');
+  const [currentPage, setCurrentPage] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const page = params.get('page');
+    
+    // Check for /admin path
+    if (window.location.pathname.startsWith('/admin')) {
+      return 'admin';
+    }
+    
+    // Check for explicit admin page param
+    if (page === 'admin') {
+      return 'admin';
+    }
+    
+    // Check for stored admin redirect flag (fallback for OAuth redirects)
+    if (localStorage.getItem('redirect_to_admin') === 'true') {
+      return 'admin';
+    }
+
+    if (page) return page;
+    return 'home';
+  });
+
   const [isLoading, setIsLoading] = useState(() => {
     // Check if returning from OAuth redirect to skip preloader
     const hash = window.location.hash;
@@ -63,19 +88,43 @@ const App: React.FC = () => {
     };
   }, []);
 
-  // Handle URL parameters for deep linking
+  // Initialize AOS
+  useEffect(() => {
+    AOS.init({
+      duration: 1000,
+      once: true,
+      mirror: false,
+      offset: 100,
+    });
+  }, []);
+
+  // Handle URL parameters and cleanup
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const page = params.get('page');
     const id = params.get('id');
 
-    if (page) {
-      setCurrentPage(page);
-      if (id) {
-        setNavigationParams({ orderId: id }); // Map 'id' to 'orderId' for tracking
+    // Handle Admin Redirect Cleanup
+    const storedRedirect = localStorage.getItem('redirect_to_admin');
+    
+    if (storedRedirect === 'true' || page === 'admin') {
+      localStorage.removeItem('redirect_to_admin');
+      
+      // Force admin state if not already set
+      if (currentPage !== 'admin') {
+        setCurrentPage('admin');
+      }
+      
+      // Clean up URL to show /admin
+      if (!window.location.pathname.startsWith('/admin')) {
+        window.history.replaceState(null, '', '/admin');
       }
     }
-  }, []);
+
+    if (id) {
+      setNavigationParams({ orderId: id });
+    }
+  }, [currentPage]);
 
   const handleNavigate = (page: string, params?: any) => {
     // Allow navigation if params are present even if on same page (e.g. to open a different product)
@@ -130,36 +179,50 @@ const App: React.FC = () => {
         return <ContactUs />;
       case 'profile':
         return <Profile onNavigate={handleNavigate} />;
+      case 'admin':
+        return <AdminDashboard onNavigate={handleNavigate} />;
       default:
         return <Home onNavigate={handleNavigate} />;
     }
   };
 
+  const isAdminPage = currentPage === 'admin';
+
   return (
     <>
       {isLoading && <Preloader onComplete={() => setIsLoading(false)} />}
     
-      <div className="min-h-screen bg-void text-offwhite font-body selection:bg-luxury selection:text-void cursor-none relative overflow-x-hidden">
+      <div className={`min-h-screen relative overflow-x-hidden ${
+        isAdminPage 
+          ? 'bg-void text-offwhite font-body cursor-none selection:bg-luxury selection:text-void' 
+          : 'bg-void text-offwhite font-body cursor-none selection:bg-luxury selection:text-void'
+      }`}>
         {/* Global Elements */}
         <CustomCursor />
-        <Chatbot onOpenAuth={() => setIsAuthModalOpen(true)} />
-        <CartSidebar onCheckout={() => {
-          if (user) {
-            handleNavigate('checkout');
-          } else {
-            setIsAuthModalOpen(true);
-          }
-        }} />
+        {!isAdminPage && (
+          <>
+            <Chatbot onOpenAuth={() => setIsAuthModalOpen(true)} />
+            <CartSidebar onCheckout={() => {
+              if (user) {
+                handleNavigate('checkout');
+              } else {
+                setIsAuthModalOpen(true);
+              }
+            }} />
+          </>
+        )}
         <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
         
         {/* Main Layout */}
         <div className={`transition-opacity duration-1000 ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
           {/* Header shows everywhere except potentially checkout if desired, but nice to keep navigation */}
-          <Header 
-            onNavigate={handleNavigate} 
-            currentPage={currentPage} 
-            onOpenAuth={() => setIsAuthModalOpen(true)}
-          />
+          {!isAdminPage && (
+            <Header 
+              onNavigate={handleNavigate} 
+              currentPage={currentPage} 
+              onOpenAuth={() => setIsAuthModalOpen(true)}
+            />
+          )}
           
           <main 
             className={`relative z-10 min-h-screen transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
@@ -171,7 +234,7 @@ const App: React.FC = () => {
             {renderPage()}
           </main>
           
-          <Footer onNavigate={handleNavigate} />
+          {!isAdminPage && <Footer onNavigate={handleNavigate} />}
         </div>
       </div>
     </>

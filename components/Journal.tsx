@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { PageHero } from './PageHero';
 import { ArrowUpRight, ArrowLeft, Calendar, Share2, Clock } from 'lucide-react';
@@ -275,6 +275,7 @@ const JournalArticleModal: React.FC<{ article: Article; onClose: () => void }> =
 export const Journal: React.FC = () => {
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [filter, setFilter] = useState('All');
+  const containerRef = useRef<HTMLDivElement>(null);
   
   const categories = ['All', 'Featured', 'Events', 'Fragrance', 'Maison', 'Craftsmanship'];
   
@@ -283,9 +284,8 @@ export const Journal: React.FC = () => {
     : allArticles.filter(a => a.category === filter || (filter === 'Featured' && a.isFeatured));
 
 
-
   return (
-    <div className="min-h-screen bg-void animate-fade-in relative z-10">
+    <div ref={containerRef} className="min-h-screen bg-void animate-fade-in relative z-10">
         {/* Article Reading View Overlay */}
         {selectedArticle && (
             <JournalArticleModal article={selectedArticle} onClose={() => setSelectedArticle(null)} />
@@ -323,7 +323,7 @@ export const Journal: React.FC = () => {
                 <article 
                     key={article.id}
                     onClick={() => setSelectedArticle(article)}
-                    className={`group cursor-pointer flex flex-col gap-4 ${article.isFeatured && filter === 'All' ? 'md:col-span-2 lg:col-span-2' : ''}`}
+                    className={`journal-card group cursor-pointer flex flex-col gap-4 ${article.isFeatured && filter === 'All' ? 'md:col-span-2 lg:col-span-2' : ''}`}
                     data-hover="true"
                 >
                     <div className={`relative overflow-hidden rounded-2xl bg-stone-900 border border-white/5 ${article.isFeatured && filter === 'All' ? 'aspect-[16/9]' : 'aspect-[4/5] md:aspect-[3/4]'}`}>
