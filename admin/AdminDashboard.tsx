@@ -614,7 +614,7 @@ const ProductsTab = () => {
         </button>
       </div>
 
-      <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden shadow-sm">
+      <div className="hidden md:block bg-white/5 border border-white/10 rounded-lg overflow-hidden shadow-sm">
         <table className="w-full text-left border-collapse">
           <thead className="bg-black/20 text-white/40 text-xs uppercase font-semibold tracking-wider border-b border-white/10">
             <tr>
@@ -675,6 +675,51 @@ const ProductsTab = () => {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile View for Products */}
+      <div className="md:hidden space-y-4">
+        {products.map(product => (
+          <div 
+            key={product.id} 
+            className={`bg-white/5 border border-white/10 rounded-lg p-4 transition-all duration-500 ${
+              deletingId === product.id ? 'opacity-0 -translate-x-full' : 'opacity-100'
+            }`}
+          >
+            <div className="flex items-start gap-3 mb-3">
+              <div className="w-16 h-16 rounded bg-white/5 overflow-hidden border border-white/10 flex-shrink-0">
+                <img src={product.image_url} alt="" className="w-full h-full object-cover" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium text-white truncate">{product.name}</h3>
+                <p className="text-xs text-white/40 mb-1">ID: {product.id.slice(0, 6)}</p>
+                <span className="font-mono text-luxury">${product.price}</span>
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-white/60 text-sm">{product.category}</span>
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.is_new ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-white/10 text-white/40 border border-white/10'}`}>
+                {product.is_new ? 'New Arrival' : 'Standard'}
+              </span>
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-white/10 pt-3">
+              <button 
+                onClick={() => { setEditingProduct(product); setIsModalOpen(true); }} 
+                className="flex items-center gap-2 px-3 py-1.5 hover:bg-blue-500/10 text-blue-400 rounded transition-all duration-200 active:scale-95 text-sm"
+              >
+                <Edit size={14} /> Edit
+              </button>
+              <button 
+                onClick={() => initiateDelete(product)} 
+                className="flex items-center gap-2 px-3 py-1.5 hover:bg-red-500/10 text-red-400 rounded transition-all duration-200 active:scale-95 text-sm"
+              >
+                <Trash2 size={14} /> Delete
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
 
       <ConfirmationModal 
@@ -1008,8 +1053,8 @@ const OrdersTab = () => {
         </div>
       </div>
 
-      <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden shadow-sm">
-        <table className="w-full text-left border-collapse">
+      <div className="hidden md:block bg-white/5 border border-white/10 rounded-lg shadow-sm overflow-x-auto">
+        <table className="w-full min-w-[900px] md:min-w-0 text-left border-collapse">
           <thead className="bg-black/20 text-white/40 text-xs uppercase font-semibold tracking-wider border-b border-white/10">
             <tr>
               <th className="p-4">Order ID</th>
@@ -1078,6 +1123,64 @@ const OrdersTab = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Mobile View for Orders */}
+      <div className="md:hidden space-y-4">
+        {orders.map(order => (
+          <div key={order.id} className="bg-white/5 border border-white/10 rounded-lg p-4">
+            <div className="flex justify-between items-start mb-3">
+              <div>
+                <span className="text-luxury font-mono text-sm">#{order.id.slice(0, 8)}</span>
+                <p className="text-xs text-white/40">{new Date(order.created_at).toLocaleDateString()}</p>
+              </div>
+              <span className="font-medium text-white">${order.total_amount}</span>
+            </div>
+            
+            <div className="mb-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Users size={14} className="text-white/40" />
+                <span className="text-sm text-white/80">{order.email}</span>
+              </div>
+              <select 
+                value={order.status}
+                onChange={(e) => updateStatus(order.id, e.target.value)}
+                className={`w-full bg-black/20 border border-white/10 rounded px-2 py-1.5 text-xs font-medium uppercase focus:outline-none focus:border-luxury focus:ring-1 focus:ring-luxury/50 transition-all duration-300 ${
+                  order.status === 'delivered' ? 'text-emerald-400 border-emerald-500/20' :
+                  order.status === 'shipped' ? 'text-blue-400 border-blue-500/20' :
+                  'text-amber-400 border-amber-500/20'
+                }`}
+              >
+                <option value="processing">Processing</option>
+                <option value="shipped">Shipped</option>
+                <option value="out_for_delivery">Out for Delivery</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+
+            <div className="space-y-2 border-t border-white/10 pt-3">
+              {order.items?.map((item: any, idx: number) => (
+                <div key={idx} className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/5 rounded border border-white/10 overflow-hidden flex-shrink-0">
+                    {item.image_url ? (
+                      <img src={item.image_url} alt={item.product_name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-white/20"><Package size={12} /></div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white truncate">{item.product_name}</p>
+                    <p className="text-xs text-white/40">
+                      {item.variant_name && <span className="mr-1">{item.variant_name} •</span>}
+                      Qty: {item.quantity}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
@@ -1125,8 +1228,8 @@ const ContactTab = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       <h2 className="text-xl font-display text-white">Contact Messages</h2>
-      <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden shadow-sm">
-        <table className="w-full text-left border-collapse">
+      <div className="hidden md:block bg-white/5 border border-white/10 rounded-lg shadow-sm overflow-x-auto">
+        <table className="w-full min-w-[800px] md:min-w-0 text-left border-collapse">
           <thead className="bg-black/20 text-white/40 text-xs uppercase font-semibold tracking-wider border-b border-white/10">
             <tr>
               <th className="p-4">Date</th>
@@ -1189,6 +1292,36 @@ const ContactTab = () => {
         </table>
       </div>
 
+      {/* Mobile View for Contact Messages */}
+      <div className="md:hidden space-y-4">
+        {messages.map(msg => (
+          <div 
+            key={msg.id} 
+            className={`bg-white/5 border border-white/10 rounded-lg p-4 relative overflow-hidden transition-all duration-500 ${
+              deletingId === msg.id ? 'opacity-0 -translate-x-full' : 'opacity-100'
+            }`}
+          >
+            <div className="flex justify-between items-start mb-2">
+              <h3 className="text-white font-medium">{msg.name}</h3>
+              <span className="text-xs text-white/40">{new Date(msg.created_at).toLocaleDateString()}</span>
+            </div>
+            <p className="text-xs text-white/60 mb-2">{msg.email}</p>
+            <div className="mb-3">
+              <p className="text-luxury text-sm font-medium mb-1">{msg.subject}</p>
+              <p className="text-white/80 text-sm line-clamp-3">{msg.message}</p>
+            </div>
+            <div className="flex justify-end border-t border-white/10 pt-3">
+              <button 
+                onClick={() => initiateDelete(msg)} 
+                className="flex items-center gap-2 text-red-400 text-sm hover:bg-red-500/10 px-3 py-1.5 rounded transition-colors"
+              >
+                <Trash2 size={14} /> Delete
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
       <ConfirmationModal 
         isOpen={!!itemToDelete}
         onClose={() => setItemToDelete(null)}
@@ -1243,8 +1376,8 @@ const AppointmentsTab = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       <h2 className="text-xl font-display text-white">Appointments</h2>
-      <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden shadow-sm">
-        <table className="w-full text-left border-collapse">
+      <div className="hidden md:block bg-white/5 border border-white/10 rounded-lg shadow-sm overflow-x-auto">
+        <table className="w-full min-w-[850px] md:min-w-0 text-left border-collapse">
           <thead className="bg-black/20 text-white/40 text-xs uppercase font-semibold tracking-wider border-b border-white/10">
             <tr>
               <th className="p-4">Date</th>
@@ -1308,6 +1441,49 @@ const AppointmentsTab = () => {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile View for Appointments */}
+      <div className="md:hidden space-y-4">
+        {appointments.map(apt => (
+          <div 
+            key={apt.id} 
+            className={`bg-white/5 border border-white/10 rounded-lg p-4 transition-all duration-500 ${
+              deletingId === apt.id ? 'opacity-0 -translate-x-full' : 'opacity-100'
+            }`}
+          >
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <h3 className="text-white font-medium">{apt.name}</h3>
+                <p className="text-xs text-white/40">{apt.email}</p>
+              </div>
+              <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
+                {apt.status}
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2 mb-3 text-sm">
+              <div className="bg-black/20 p-2 rounded border border-white/5">
+                <p className="text-xs text-white/40 uppercase mb-1">Date & Time</p>
+                <p className="text-white">{apt.preferred_date}</p>
+                <p className="text-white/60 text-xs">{apt.preferred_time}</p>
+              </div>
+              <div className="bg-black/20 p-2 rounded border border-white/5">
+                <p className="text-xs text-white/40 uppercase mb-1">Location</p>
+                <p className="text-white capitalize">{apt.location}</p>
+              </div>
+            </div>
+
+            <div className="flex justify-end border-t border-white/10 pt-3">
+              <button 
+                onClick={() => initiateDelete(apt)} 
+                className="flex items-center gap-2 text-red-400 text-sm hover:bg-red-500/10 px-3 py-1.5 rounded transition-colors"
+              >
+                <Trash2 size={14} /> Delete
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
 
       <ConfirmationModal 
@@ -1383,8 +1559,8 @@ const CareersTab = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       <h2 className="text-xl font-display text-white">Job Applications</h2>
-      <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden shadow-sm">
-        <table className="w-full text-left border-collapse">
+      <div className="hidden md:block bg-white/5 border border-white/10 rounded-lg shadow-sm overflow-x-auto">
+        <table className="w-full min-w-[850px] md:min-w-0 text-left border-collapse">
           <thead className="bg-black/20 text-white/40 text-xs uppercase font-semibold tracking-wider border-b border-white/10">
             <tr>
               <th className="p-4">Date</th>
@@ -1452,6 +1628,54 @@ const CareersTab = () => {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile View for Job Applications */}
+      <div className="md:hidden space-y-4">
+        {applications.map(app => (
+          <div 
+            key={app.id} 
+            className={`bg-white/5 border border-white/10 rounded-lg p-4 transition-all duration-500 ${
+              deletingId === app.id ? 'opacity-0 -translate-x-full' : 'opacity-100'
+            }`}
+          >
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <h3 className="text-white font-medium">{app.full_name}</h3>
+                <p className="text-xs text-white/40">{app.email}</p>
+              </div>
+              <span className="text-xs text-white/40">{new Date(app.created_at).toLocaleDateString()}</span>
+            </div>
+            
+            <div className="mb-3">
+              <p className="text-xs text-white/40 uppercase mb-1">Position</p>
+              <p className="text-luxury font-medium">{app.job_title}</p>
+            </div>
+
+            <div className="flex items-center justify-between border-t border-white/10 pt-3">
+              {app.signed_resume_url ? (
+                <a href={app.signed_resume_url} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline text-sm hover:text-blue-300 transition-colors flex items-center gap-1">
+                  <span className="text-xs">📄</span> View Resume
+                </a>
+              ) : (
+                <span className="text-white/20 text-sm">No Resume</span>
+              )}
+              
+              <div className="flex gap-2">
+                <button className="text-xs bg-white/5 hover:bg-white/10 px-2 py-1.5 rounded text-white/60 transition-all duration-300 hover:text-white active:scale-95">
+                  View Answers
+                </button>
+                <button 
+                  onClick={() => initiateDelete(app)} 
+                  className="p-1.5 hover:bg-red-500/10 text-red-400 rounded transition-all duration-200 active:scale-95"
+                  title="Delete Application"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
       <ConfirmationModal 
