@@ -24,8 +24,12 @@ import {
   Menu,
   MessageSquare,
   Calendar,
-  Briefcase
+  Briefcase,
+  FileText,
+  Download
 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface AdminDashboardProps {
   onNavigate: (page: string) => void;
@@ -53,6 +57,111 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message }: any) 
           </button>
         </div>
       </div>
+    </div>
+  );
+};
+
+const ExportMenu = ({ data, filename, headers }: any) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const exportCSV = () => {
+    const csvContent = [
+      headers.map((h: any) => h.label).join(','),
+      ...data.map((row: any) => headers.map((h: any) => {
+        // Handle nested properties
+        const val = h.key.split('.').reduce((o: any, i: any) => o?.[i], row);
+        // Handle arrays or objects
+        const strVal = typeof val === 'object' ? JSON.stringify(val) : String(val || '');
+        return `"${strVal.replace(/"/g, '""')}"`;
+      }).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+    setIsOpen(false);
+  };
+
+  const exportPDF = () => {
+    const doc = new jsPDF();
+    
+    const tableColumn = headers.map((h: any) => h.label);
+    const tableRows = data.map((row: any) => {
+      return headers.map((h: any) => {
+         const val = h.key.split('.').reduce((o: any, i: any) => o?.[i], row);
+         // Format specific values if needed, e.g. dates or currency
+         if (h.key === 'price' || h.key === 'total_amount') return `$${val}`;
+         if (h.key.includes('created_at') || h.key.includes('date')) return new Date(val).toLocaleDateString();
+         return val || '';
+      });
+    });
+
+    doc.text(`${filename.replace(/_/g, ' ').toUpperCase()}`, 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Generated on ${new Date().toLocaleDateString()}`, 14, 22);
+    
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 25,
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [232, 207, 160], textColor: [0, 0, 0] } // Luxury gold color
+    });
+
+    doc.save(`${filename}_${new Date().toISOString().split('T')[0]}.pdf`);
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="relative" ref={ref}>
+      <div className="flex shadow-sm">
+        <button
+          onClick={exportPDF}
+          className="px-3 py-1.5 bg-white/5 border border-white/10 border-r-0 rounded-l text-white/60 text-sm hover:text-white hover:bg-white/10 transition-all duration-300 flex items-center gap-2"
+          title="Export as PDF"
+        >
+          <FileText size={14} />
+          <span>Export PDF</span>
+        </button>
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="px-2 py-1.5 bg-white/5 border border-white/10 rounded-r text-white/60 hover:text-white hover:bg-white/10 transition-all duration-300 border-l border-l-white/10"
+        >
+          <ChevronDown size={14} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+        </button>
+      </div>
+
+      {isOpen && (
+        <div className="absolute z-50 top-full right-0 mt-1 bg-[#1a1a1a] border border-white/10 rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 min-w-[150px]">
+          <button
+            onClick={exportCSV}
+            className="w-full text-left px-4 py-2.5 text-xs font-medium uppercase hover:bg-white/5 transition-colors flex items-center gap-2 text-white/60 hover:text-white"
+          >
+            <Download size={14} />
+            Export CSV
+          </button>
+        </div>
+      )}
     </div>
   );
 };
@@ -607,12 +716,29 @@ const ProductsTab = () => {
             className="bg-white/5 border border-white/10 text-white pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:border-luxury focus:ring-1 focus:ring-luxury/50 w-64 placeholder:text-white/20 transition-all duration-300"
           />
         </div>
-        <button 
-          onClick={() => { setEditingProduct(null); setIsModalOpen(true); }}
-          className="bg-luxury hover:bg-white hover:text-void text-void px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-all duration-300 shadow-[0_0_15px_rgba(232,207,160,0.2)] hover:shadow-[0_0_25px_rgba(232,207,160,0.4)] active:scale-95"
-        >
-          <Plus size={18} /> Add Product
-        </button>
+        <div className="flex gap-3">
+          <ExportMenu 
+            data={products.map(p => ({
+              ...p,
+              status_label: p.is_new ? 'New Arrival' : 'Standard'
+            }))} 
+            filename="products_inventory" 
+            headers={[
+              { label: 'ID', key: 'id' },
+              { label: 'Name', key: 'name' },
+              { label: 'Category', key: 'category' },
+              { label: 'Price', key: 'price' },
+              { label: 'Status', key: 'status_label' },
+              { label: 'Created At', key: 'created_at' }
+            ]} 
+          />
+          <button 
+            onClick={() => { setEditingProduct(null); setIsModalOpen(true); }}
+            className="bg-luxury hover:bg-white hover:text-void text-void px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-all duration-300 shadow-[0_0_15px_rgba(232,207,160,0.2)] hover:shadow-[0_0_25px_rgba(232,207,160,0.4)] active:scale-95"
+          >
+            <Plus size={18} /> Add Product
+          </button>
+        </div>
       </div>
 
       <div className="hidden md:block bg-white/5 border border-white/10 rounded-lg overflow-hidden shadow-sm">
@@ -1106,7 +1232,17 @@ const OrdersTab = () => {
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-display text-white">Order Management</h2>
         <div className="flex gap-2">
-          <button className="px-3 py-1.5 bg-white/5 border border-white/10 text-white/60 rounded text-sm hover:text-white hover:bg-white/10 transition-all duration-300 active:scale-95 hover:shadow-lg">Export CSV</button>
+          <ExportMenu 
+            data={orders} 
+            filename="orders_report" 
+            headers={[
+              { label: 'Order ID', key: 'id' },
+              { label: 'Customer Email', key: 'email' },
+              { label: 'Total Amount', key: 'total_amount' },
+              { label: 'Status', key: 'status' },
+              { label: 'Date', key: 'created_at' }
+            ]} 
+          />
         </div>
       </div>
 
@@ -1262,7 +1398,20 @@ const ContactTab = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <h2 className="text-xl font-display text-white">Contact Messages</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-display text-white">Contact Messages</h2>
+        <ExportMenu 
+          data={messages} 
+          filename="contact_messages" 
+          headers={[
+            { label: 'Date', key: 'created_at' },
+            { label: 'Name', key: 'name' },
+            { label: 'Email', key: 'email' },
+            { label: 'Subject', key: 'subject' },
+            { label: 'Message', key: 'message' }
+          ]} 
+        />
+      </div>
       <div className="hidden md:block bg-white/5 border border-white/10 rounded-lg shadow-sm overflow-x-auto">
         <table className="w-full min-w-[800px] md:min-w-0 text-left border-collapse">
           <thead className="bg-black/20 text-white/40 text-xs uppercase font-semibold tracking-wider border-b border-white/10">
@@ -1410,7 +1559,22 @@ const AppointmentsTab = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <h2 className="text-xl font-display text-white">Appointments</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-display text-white">Appointments</h2>
+        <ExportMenu 
+          data={appointments} 
+          filename="appointments_list" 
+          headers={[
+            { label: 'Date', key: 'created_at' },
+            { label: 'Client Name', key: 'name' },
+            { label: 'Email', key: 'email' },
+            { label: 'Type', key: 'location' },
+            { label: 'Preferred Date', key: 'preferred_date' },
+            { label: 'Preferred Time', key: 'preferred_time' },
+            { label: 'Status', key: 'status' }
+          ]} 
+        />
+      </div>
       <div className="hidden md:block bg-white/5 border border-white/10 rounded-lg shadow-sm overflow-x-auto">
         <table className="w-full min-w-[850px] md:min-w-0 text-left border-collapse">
           <thead className="bg-black/20 text-white/40 text-xs uppercase font-semibold tracking-wider border-b border-white/10">
@@ -1593,7 +1757,20 @@ const CareersTab = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <h2 className="text-xl font-display text-white">Job Applications</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-display text-white">Job Applications</h2>
+        <ExportMenu 
+          data={applications} 
+          filename="job_applications" 
+          headers={[
+            { label: 'Date', key: 'created_at' },
+            { label: 'Candidate', key: 'full_name' },
+            { label: 'Email', key: 'email' },
+            { label: 'Position', key: 'job_title' },
+            { label: 'Resume URL', key: 'signed_resume_url' }
+          ]} 
+        />
+      </div>
       <div className="hidden md:block bg-white/5 border border-white/10 rounded-lg shadow-sm overflow-x-auto">
         <table className="w-full min-w-[850px] md:min-w-0 text-left border-collapse">
           <thead className="bg-black/20 text-white/40 text-xs uppercase font-semibold tracking-wider border-b border-white/10">
