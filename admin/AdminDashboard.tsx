@@ -14,6 +14,7 @@ import {
   X, 
   Upload,
   ChevronRight,
+  ChevronDown,
   DollarSign,
   TrendingUp,
   LogOut,
@@ -1000,6 +1001,62 @@ const ProductModal = ({ product, onClose, onSave }: any) => {
 };
 
 // --- ORDERS TAB ---
+const StatusDropdown = ({ status, onUpdate }: { status: string, onUpdate: (val: string) => void }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const options = [
+    { value: 'processing', label: 'Processing' },
+    { value: 'shipped', label: 'Shipped' },
+    { value: 'out_for_delivery', label: 'Out for Delivery' },
+    { value: 'delivered', label: 'Delivered' },
+    { value: 'cancelled', label: 'Cancelled' }
+  ];
+
+  const getStatusColor = (val: string) => val === 'cancelled' ? 'text-red-400' : 'text-emerald-400';
+  const currentLabel = options.find(o => o.value === status)?.label || status;
+
+  return (
+    <div className="relative min-w-[160px]" ref={ref}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`w-full bg-black/20 border border-white/10 rounded px-3 py-2 text-xs font-medium uppercase flex justify-between items-center transition-all duration-300 hover:border-white/30 ${getStatusColor(status)}`}
+      >
+        <span>{currentLabel}</span>
+        <ChevronDown size={14} className={`ml-2 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''} text-white/40`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-[#1a1a1a] border border-white/10 rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => {
+                onUpdate(opt.value);
+                setIsOpen(false);
+              }}
+              className={`w-full text-left px-4 py-2.5 text-xs font-medium uppercase hover:bg-white/5 transition-colors flex justify-between items-center ${getStatusColor(opt.value)}`}
+            >
+              {opt.label}
+              {status === opt.value && <Check size={12} className={getStatusColor(opt.value)} />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const OrdersTab = () => {
   const [orders, setOrders] = useState<any[]>([]);
 
@@ -1101,21 +1158,10 @@ const OrdersTab = () => {
                 </td>
                 <td className="p-4 font-medium text-white align-top">${order.total_amount}</td>
                 <td className="p-4 align-top">
-                  <select 
-                    value={order.status}
-                    onChange={(e) => updateStatus(order.id, e.target.value)}
-                    className={`bg-black/20 border border-white/10 rounded px-2 py-1 text-xs font-medium uppercase focus:outline-none focus:border-luxury focus:ring-1 focus:ring-luxury/50 transition-all duration-300 cursor-pointer ${
-                      order.status === 'delivered' ? 'text-emerald-400 border-emerald-500/20' :
-                      order.status === 'shipped' ? 'text-blue-400 border-blue-500/20' :
-                      'text-amber-400 border-amber-500/20'
-                    }`}
-                  >
-                    <option value="processing">Processing</option>
-                    <option value="shipped">Shipped</option>
-                    <option value="out_for_delivery">Out for Delivery</option>
-                    <option value="delivered">Delivered</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
+                  <StatusDropdown 
+                    status={order.status} 
+                    onUpdate={(val) => updateStatus(order.id, val)} 
+                  />
                 </td>
                 <td className="p-4 text-white/40 text-sm align-top">{new Date(order.created_at).toLocaleDateString()}</td>
               </tr>
@@ -1141,21 +1187,10 @@ const OrdersTab = () => {
                 <Users size={14} className="text-white/40" />
                 <span className="text-sm text-white/80">{order.email}</span>
               </div>
-              <select 
-                value={order.status}
-                onChange={(e) => updateStatus(order.id, e.target.value)}
-                className={`w-full bg-black/20 border border-white/10 rounded px-2 py-1.5 text-xs font-medium uppercase focus:outline-none focus:border-luxury focus:ring-1 focus:ring-luxury/50 transition-all duration-300 ${
-                  order.status === 'delivered' ? 'text-emerald-400 border-emerald-500/20' :
-                  order.status === 'shipped' ? 'text-blue-400 border-blue-500/20' :
-                  'text-amber-400 border-amber-500/20'
-                }`}
-              >
-                <option value="processing">Processing</option>
-                <option value="shipped">Shipped</option>
-                <option value="out_for_delivery">Out for Delivery</option>
-                <option value="delivered">Delivered</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
+              <StatusDropdown 
+                status={order.status} 
+                onUpdate={(val) => updateStatus(order.id, val)} 
+              />
             </div>
 
             <div className="space-y-2 border-t border-white/10 pt-3">
