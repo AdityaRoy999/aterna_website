@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product, CartItem } from '../types';
 import { useAuth } from './AuthContext';
 import { supabase } from '../src/supabaseClient';
-import { shopProducts } from '../components/productData';
 
 interface CartContextType {
   items: CartItem[];
@@ -53,20 +52,47 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchServerCart = async () => {
     if (!user) return;
     try {
-      const { data, error } = await supabase
+      // 1. Fetch Cart Items
+      const { data: cartData, error: cartError } = await supabase
         .from('cart_items')
         .select('*')
         .eq('user_id', user.id);
 
-      if (error) throw error;
+      if (cartError) throw cartError;
 
-      if (data && data.length > 0) {
-        const serverItems: CartItem[] = data.map((item: any) => {
-          const product = shopProducts.find(p => p.id === item.product_id);
+      if (cartData && cartData.length > 0) {
+        // 2. Get unique product IDs
+        const productIds = [...new Set(cartData.map((item: any) => item.product_id))];
+
+        // 3. Fetch Product Details from Supabase
+        const { data: productsData, error: productsError } = await supabase
+          .from('products')
+          .select('*')
+          .in('id', productIds);
+
+        if (productsError) throw productsError;
+
+        // 4. Map Cart Items with Product Details
+        const serverItems: CartItem[] = cartData.map((item: any) => {
+          const product = productsData?.find(p => p.id === item.product_id);
           if (!product) return null;
+
+          // Parse variants if needed (similar to Shop.tsx logic)
+          let variants = [];
+          try {
+             variants = typeof product.variants === 'string' ? JSON.parse(product.variants) : product.variants;
+          } catch (e) { variants = []; }
+
           return {
-            ...product,
             id: `${item.product_id}-${item.variant_name}`, // Reconstruct unique ID
+            name: product.name,
+            price: product.price,
+            category: product.category,
+            imageUrl: product.image_url,
+            description: product.description,
+            isNew: product.is_new,
+            variants: variants,
+            variantType: product.variant_type,
             quantity: item.quantity,
             selectedColor: item.variant_name
           };

@@ -4,7 +4,6 @@ import { X } from '@/components/ui/icons/x';
 import { GoogleGenAI, Chat } from "@google/genai";
 import emailjs from '@emailjs/browser';
 import Lenis from 'lenis';
-import { shopProducts } from './productData';
 import { useBookmarks } from '../context/BookmarkContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../src/supabaseClient';
@@ -37,12 +36,7 @@ interface Message {
   };
 }
 
-const productCatalog = shopProducts.map(p => {
-  const variants = p.variants?.map(v => `${v.name}`).join(', ');
-  return `- ${p.name}: $${p.price.toLocaleString()} (${p.category}) [Variants: ${variants}]`;
-}).join('\n');
-
-const SYSTEM_INSTRUCTION = `You are the AETERNA Concierge, an expert advisor for a high-end luxury lifestyle brand. Your tone is sophisticated, concise, and effortless.
+const getSystemInstruction = (catalog: string) => `You are the AETERNA Concierge, an expert advisor for a high-end luxury lifestyle brand. Your tone is sophisticated, concise, and effortless.
 
 Core Guidelines:
 Tone: Use elegant, editorial language. Avoid corporate jargon. Never use emojis.
@@ -50,7 +44,7 @@ Brevity: Keep initial responses under 2 sentences unless asked for details.
 Role: You are a curator, not a salesperson.
 
 PRODUCT CATALOG:
-${productCatalog}
+${catalog}
 
 CAPABILITIES:
 1. DISPLAY PRODUCTS: If a user mentions a specific product or asks to see it, you MUST display it using the JSON action below.
@@ -127,6 +121,8 @@ export const Chatbot: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) =>
   const { bookmarkedIds } = useBookmarks();
   const { user } = useAuth();
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [dynamicCatalog, setDynamicCatalog] = useState<string>('');
+  const [products, setProducts] = useState<any[]>([]);
 
   // Initialize Lenis for Chatbot
   useEffect(() => {
@@ -198,6 +194,48 @@ export const Chatbot: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) =>
     }
   }, [messages]);
 
+  // Initialize Chat Session on Mount (after fetching products)
+  useEffect(() => {
+    const initChat = async () => {
+      try {
+        // Fetch products from Supabase
+        const { data: productsData, error } = await supabase.from('products').select('*');
+        if (error) throw error;
+
+        let catalog = '';
+        if (productsData) {
+          // Parse variants for state
+          const parsedProducts = productsData.map(p => {
+             let variants = [];
+             try {
+                variants = typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants;
+             } catch (e) { variants = []; }
+             return { ...p, variants, imageUrl: p.image_url };
+          });
+          setProducts(parsedProducts);
+
+          catalog = parsedProducts.map(p => {
+            const variantNames = Array.isArray(p.variants) ? p.variants.map((v: any) => v.name).join(', ') : '';
+            return `- ${p.name}: $${p.price.toLocaleString()} (${p.category}) [Variants: ${variantNames}]`;
+          }).join('\n');
+        }
+        setDynamicCatalog(catalog);
+
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        chatSessionRef.current = ai.chats.create({
+          model: 'gemini-2.5-flash',
+          config: {
+            systemInstruction: getSystemInstruction(catalog),
+          },
+        });
+      } catch (error) {
+        console.error("Failed to initialize AETERNA AI", error);
+      }
+    };
+    
+    initChat();
+  }, []);
+
   const clearHistory = () => {
     localStorage.removeItem('aeterna_chat_history');
     setMessages([
@@ -210,7 +248,7 @@ export const Chatbot: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) =>
         chatSessionRef.current = ai.chats.create({
           model: 'gemini-2.5-flash',
           config: {
-            systemInstruction: SYSTEM_INSTRUCTION,
+            systemInstruction: getSystemInstruction(dynamicCatalog),
           },
         });
       } catch (error) {
@@ -219,34 +257,6 @@ export const Chatbot: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) =>
     };
     initChat();
   };
-
-  useEffect(() => {
-    if (lenisRef.current && messagesEndRef.current) {
-       // Use Lenis to scroll smoothly to the bottom
-       lenisRef.current.scrollTo(messagesEndRef.current, { immediate: false });
-    } else {
-       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages, isOpen]);
-
-  // Initialize Chat Session on Mount
-  useEffect(() => {
-    const initChat = async () => {
-      try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        chatSessionRef.current = ai.chats.create({
-          model: 'gemini-2.5-flash',
-          config: {
-            systemInstruction: SYSTEM_INSTRUCTION,
-          },
-        });
-      } catch (error) {
-        console.error("Failed to initialize AETERNA AI", error);
-      }
-    };
-    
-    initChat();
-  }, []);
 
   const handlePayment = async (details: NonNullable<Message['paymentDetails']>) => {
     setIsTyping(true);
@@ -313,13 +323,13 @@ export const Chatbot: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) =>
          chatSessionRef.current = ai.chats.create({
           model: 'gemini-2.5-flash',
           config: {
-            systemInstruction: SYSTEM_INSTRUCTION,
+            systemInstruction: getSystemInstruction(dynamicCatalog),
           },
          });
       }
 
       // Inject Context
-      const bookmarkedProducts = shopProducts
+      const bookmarkedProducts = products
         .filter(p => bookmarkedIds.includes(p.id))
         .map(p => p.name)
         .join(', ');
@@ -359,13 +369,13 @@ User Profile Details (Use these if user confirms):
                }
 
                // Find product image with specific variant support
-               const productObj = shopProducts.find(p => p.name === data.product);
+               const productObj = products.find(p => p.name === data.product);
                let imageUrl = productObj ? productObj.imageUrl : undefined;
                let variantName = data.variant;
 
                // If a variant is specified, try to find its specific image
                if (productObj && variantName) {
-                 const variant = productObj.variants?.find(v => 
+                 const variant = productObj.variants?.find((v: any) => 
                    v.name.toLowerCase().includes(variantName.toLowerCase()) || 
                    variantName.toLowerCase().includes(v.name.toLowerCase())
                  );
@@ -393,14 +403,14 @@ User Profile Details (Use these if user confirms):
             }
 
             if (data.action === 'show_product') {
-              const product = shopProducts.find(p => p.name === data.productName);
+              const product = products.find(p => p.name === data.productName);
               if (product) {
                 let imageUrl = product.imageUrl;
                 let variantName = '';
                 
                 // Try to find specific variant image
                 if (data.variant) {
-                  const variant = product.variants?.find(v => v.name.toLowerCase().includes(data.variant.toLowerCase()));
+                  const variant = product.variants?.find((v: any) => v.name.toLowerCase().includes(data.variant.toLowerCase()));
                   if (variant) {
                     imageUrl = variant.imageUrl;
                     variantName = variant.name;

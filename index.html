@@ -24,6 +24,7 @@
         --color-glass-border: rgba(255, 255, 255, 0.1);
       }
     </style>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script>
       tailwind.config = {
         darkMode: 'class',
@@ -90,18 +91,28 @@
         overflow-x: hidden;
       }
       /* Custom scrollbar for luxury feel */
+      .custom-scrollbar::-webkit-scrollbar,
       ::-webkit-scrollbar {
         width: 6px;
       }
+      .custom-scrollbar::-webkit-scrollbar-track,
       ::-webkit-scrollbar-track {
         background: #050505;
       }
+      .custom-scrollbar::-webkit-scrollbar-thumb,
       ::-webkit-scrollbar-thumb {
         background: #E8CFA0;
         border-radius: 4px;
       }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover,
       ::-webkit-scrollbar-thumb:hover {
         background: #A38961;
+      }
+      
+      .custom-scrollbar {
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #E8CFA0 #050505;
       }
       
       .text-clip-gold {

@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageHero } from './PageHero';
 import { useBookmarks } from '../context/BookmarkContext';
 import { useCart } from '../context/CartContext';
-import { shopProducts } from './productData';
+import { supabase } from '../src/supabaseClient';
+import { Product } from '../types';
 import { Trash2, ShoppingBag, Heart } from 'lucide-react';
 import { ArrowRight } from '@/components/ui/icons/arrow-right';
 
@@ -13,8 +14,51 @@ interface WishlistProps {
 export const Wishlist: React.FC<WishlistProps> = ({ onNavigate }) => {
   const { bookmarkedIds, toggleBookmark } = useBookmarks();
   const { addToCart } = useCart();
+  const [wishlistItems, setWishlistItems] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const wishlistItems = shopProducts.filter(product => bookmarkedIds.includes(product.id));
+  useEffect(() => {
+    const fetchWishlistItems = async () => {
+      if (bookmarkedIds.length === 0) {
+        setWishlistItems([]);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .in('id', bookmarkedIds);
+
+        if (error) throw error;
+
+        if (data) {
+          const items = data.map(p => {
+            let variants = [];
+            try {
+               variants = typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants;
+            } catch (e) { variants = []; }
+
+            return {
+              ...p,
+              imageUrl: p.image_url,
+              isNew: p.is_new,
+              variantType: p.variant_type,
+              variants: variants
+            };
+          });
+          setWishlistItems(items);
+        }
+      } catch (error) {
+        console.error('Error fetching wishlist:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWishlistItems();
+  }, [bookmarkedIds]);
 
   const handleAddToCart = (product: any) => {
     addToCart(product, 1, product.variants?.[0]?.name || 'Standard');
@@ -29,7 +73,11 @@ export const Wishlist: React.FC<WishlistProps> = ({ onNavigate }) => {
       />
       
       <section className="py-24 px-6 max-w-7xl mx-auto">
-        {wishlistItems.length === 0 ? (
+        {loading ? (
+           <div className="flex justify-center py-20">
+             <div className="w-8 h-8 border-2 border-luxury border-t-transparent rounded-full animate-spin"></div>
+           </div>
+        ) : wishlistItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-center py-20">
             <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center text-offwhite/20 mb-8">
               <Heart size={48} />

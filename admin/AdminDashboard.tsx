@@ -168,7 +168,7 @@ const ExportMenu = ({ data, filename, headers }: any) => {
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
   const { user, signOut } = useAuth();
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'contact' | 'appointments' | 'careers'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'contact' | 'appointments' | 'careers' | 'settings'>('overview');
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -421,6 +421,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
             active={activeTab === 'careers'} 
             onClick={() => { setActiveTab('careers'); setIsSidebarOpen(false); }} 
           />
+          <div className="pt-4 pb-2">
+            <p className="px-3 text-xs font-semibold text-white/20 uppercase tracking-wider">System</p>
+          </div>
+          <SidebarItem 
+            icon={<Settings size={18} />} 
+            label="Settings" 
+            active={activeTab === 'settings'} 
+            onClick={() => { setActiveTab('settings'); setIsSidebarOpen(false); }} 
+          />
         </nav>
 
         <div className="p-4 border-t border-white/10 bg-white/5">
@@ -460,7 +469,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
               <Bell size={20} />
               <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
-            <button className="p-2 text-white/40 hover:text-luxury hover:bg-white/5 rounded-full transition-colors">
+            <button 
+              onClick={() => setActiveTab('settings')}
+              className={`p-2 rounded-full transition-colors ${activeTab === 'settings' ? 'text-luxury bg-white/5' : 'text-white/40 hover:text-luxury hover:bg-white/5'}`}
+            >
               <Settings size={20} />
             </button>
           </div>
@@ -475,6 +487,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
             {activeTab === 'contact' && <ContactTab />}
             {activeTab === 'appointments' && <AppointmentsTab />}
             {activeTab === 'careers' && <CareersTab />}
+            {activeTab === 'settings' && <SettingsTab />}
           </div>
         </div>
       </main>
@@ -756,7 +769,7 @@ const ProductsTab = () => {
             {products.map(product => (
               <tr 
                 key={product.id} 
-                className={`hover:bg-white/5 transition-all duration-500 ease-in-out hover:scale-[1.002] hover:shadow-lg bg-transparent ${
+                className={`hover:bg-white/5 transition-all duration-500 ease-in-out hover:shadow-lg bg-transparent ${
                   deletingId === product.id ? 'opacity-0 -translate-x-full pointer-events-none' : 'opacity-100'
                 }`}
               >
@@ -875,12 +888,32 @@ const ProductModal = ({ product, onClose, onSave }: any) => {
     category: product?.category || 'Timepieces',
     image_url: product?.image_url || '',
     description: product?.description || '',
-    color: product?.color || '',
-    is_new: product?.is_new || false
+    is_new: product?.is_new || false,
+    variant_type: product?.variant_type || 'Color'
   });
+  
+  // Parse variants from JSON or use default
+  const [variants, setVariants] = useState<any[]>(() => {
+    if (product?.variants) {
+      return typeof product.variants === 'string' 
+        ? JSON.parse(product.variants) 
+        : product.variants;
+    }
+    return [];
+  });
+
   const [customCategory, setCustomCategory] = useState('');
   const [isCustomCategory, setIsCustomCategory] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  // Update variant type based on category
+  useEffect(() => {
+    if (formData.category === 'Fragrance') {
+      setFormData(prev => ({ ...prev, variant_type: 'Size' }));
+    } else if (formData.category === 'Timepieces') {
+      setFormData(prev => ({ ...prev, variant_type: 'Finish' }));
+    }
+  }, [formData.category]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
@@ -912,198 +945,203 @@ const ProductModal = ({ product, onClose, onSave }: any) => {
     }
   };
 
+  const handleAddVariant = () => {
+    setVariants([...variants, { name: '', imageUrl: formData.image_url, colorCode: '#000000' }]);
+  };
+
+  const handleRemoveVariant = (index: number) => {
+    setVariants(variants.filter((_, i) => i !== index));
+  };
+
+  const handleVariantChange = (index: number, field: string, value: string) => {
+    const newVariants = [...variants];
+    newVariants[index] = { ...newVariants[index], [field]: value };
+    setVariants(newVariants);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const categoryToSave = isCustomCategory ? customCategory : formData.category;
     
     const dataToSave = {
       ...formData,
-      category: categoryToSave
+      category: categoryToSave,
+      variants: variants
     };
 
     if (product) {
       // Update existing product
       await supabase.from('products').update(dataToSave).eq('id', product.id);
     } else {
-      // Check if product with same name exists (case-insensitive)
-      const { data: existingProducts } = await supabase
-        .from('products')
-        .select('*')
-        .ilike('name', formData.name.trim());
-
-      if (existingProducts && existingProducts.length > 0) {
-        // Product exists, append variant
-        const existingProduct = existingProducts[0];
-        const newVariant = {
-          name: formData.color || 'Standard',
-          imageUrl: formData.image_url,
-          colorCode: '#000000', // Default or could be inferred
-          description: formData.description
-        };
-
-        // Get existing variants or initialize with current main product as first variant
-        let updatedVariants = existingProduct.variants || [];
-        
-        // If variants array is empty but product exists, it means it was a single product.
-        // We should add the original product as the first variant if it's not there.
-        if (updatedVariants.length === 0) {
-           updatedVariants.push({
-             name: existingProduct.color || 'Standard',
-             imageUrl: existingProduct.image_url,
-             colorCode: '#000000',
-             description: existingProduct.description
-           });
-        }
-
-        updatedVariants.push(newVariant);
-
-        await supabase
-          .from('products')
-          .update({ 
-            variants: updatedVariants,
-            variant_type: existingProduct.variant_type || 'Color' // Ensure variant_type is set
-          })
-          .eq('id', existingProduct.id);
-      } else {
-        // New product, create with initial variant
-        const initialVariant = {
-          name: formData.color || 'Standard',
-          imageUrl: formData.image_url,
-          colorCode: '#000000',
-          description: formData.description
-        };
-        
-        await supabase.from('products').insert([{
-          ...dataToSave,
-          variant_type: 'Color',
-          variants: [initialVariant]
-        }]);
-      }
+      await supabase.from('products').insert([dataToSave]);
     }
     onSave();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-300">
-      <div className="bg-[#1a1a1a] border border-white/10 rounded-lg p-6 w-full max-w-md shadow-2xl my-8 animate-in zoom-in-95 duration-300">
+      <div className="bg-[#1a1a1a] border border-white/10 rounded-lg p-6 w-full max-w-2xl shadow-2xl my-8 animate-in zoom-in-95 duration-300">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-display text-white">{product ? 'Edit Product' : 'Add New Product'}</h3>
           <button onClick={onClose} className="text-white/40 hover:text-white transition-all duration-300 hover:rotate-90"><X size={20} /></button>
         </div>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-white/40 uppercase mb-1 tracking-wider">Product Name</label>
-            <input 
-              className="w-full bg-white/5 border border-white/10 rounded p-2.5 text-white focus:border-luxury focus:outline-none focus:ring-1 focus:ring-luxury/50 transition-all duration-300"
-              value={formData.name}
-              onChange={e => setFormData({...formData, name: e.target.value})}
-              required
-            />
-          </div>
-          
-          <div>
-            <label className="block text-xs font-medium text-white/40 uppercase mb-1 tracking-wider">Description</label>
-            <textarea 
-              className="w-full bg-white/5 border border-white/10 rounded p-2.5 text-white focus:border-luxury focus:outline-none focus:ring-1 focus:ring-luxury/50 transition-all duration-300 h-24 resize-none"
-              value={formData.description}
-              onChange={e => setFormData({...formData, description: e.target.value})}
-              placeholder="Product description..."
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-white/40 uppercase mb-1 tracking-wider">Price</label>
-              <input 
-                type="number"
-                className="w-full bg-white/5 border border-white/10 rounded p-2.5 text-white focus:border-luxury focus:outline-none focus:ring-1 focus:ring-luxury/50 transition-all duration-300"
-                value={formData.price}
-                onChange={e => setFormData({...formData, price: e.target.value})}
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-white/40 uppercase mb-1 tracking-wider">Color</label>
-              <input 
-                type="text"
-                className="w-full bg-white/5 border border-white/10 rounded p-2.5 text-white focus:border-luxury focus:outline-none focus:ring-1 focus:ring-luxury/50 transition-all duration-300"
-                value={formData.color}
-                onChange={e => setFormData({...formData, color: e.target.value})}
-                placeholder="e.g. Gold, Silver"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-white/40 uppercase mb-1 tracking-wider">Category</label>
-            {!isCustomCategory ? (
-              <select 
-                className="w-full bg-white/5 border border-white/10 rounded p-2.5 text-white focus:border-luxury focus:outline-none focus:ring-1 focus:ring-luxury/50 transition-all duration-300"
-                value={formData.category}
-                onChange={e => {
-                  if (e.target.value === 'custom') {
-                    setIsCustomCategory(true);
-                  } else {
-                    setFormData({...formData, category: e.target.value});
-                  }
-                }}
-              >
-                <option value="Timepieces">Timepieces</option>
-                <option value="Fragrance">Fragrance</option>
-                <option value="Jewelry">Jewelry</option>
-                <option value="Accessories">Accessories</option>
-                <option value="custom">+ Custom Category</option>
-              </select>
-            ) : (
-              <div className="flex gap-2">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Left Column: Basic Info */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-white/40 uppercase mb-1 tracking-wider">Product Name</label>
                 <input 
                   className="w-full bg-white/5 border border-white/10 rounded p-2.5 text-white focus:border-luxury focus:outline-none focus:ring-1 focus:ring-luxury/50 transition-all duration-300"
-                  value={customCategory}
-                  onChange={e => setCustomCategory(e.target.value)}
-                  placeholder="Enter category name"
-                  autoFocus
-                />
-                <button 
-                  type="button"
-                  onClick={() => setIsCustomCategory(false)}
-                  className="px-3 bg-white/5 border border-white/10 rounded hover:bg-white/10 text-white/60 hover:text-white transition-colors"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-white/40 uppercase mb-1 tracking-wider">Product Image</label>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <input 
-                  type="text"
-                  className="flex-1 bg-white/5 border border-white/10 rounded p-2.5 text-white focus:border-luxury focus:outline-none focus:ring-1 focus:ring-luxury/50 transition-all duration-300 text-sm"
-                  value={formData.image_url}
-                  onChange={e => setFormData({...formData, image_url: e.target.value})}
-                  placeholder="Image URL or upload file"
+                  value={formData.name}
+                  onChange={e => setFormData({...formData, name: e.target.value})}
                   required
                 />
-                <label className="cursor-pointer bg-white/5 hover:bg-white/10 border border-white/10 rounded p-2.5 transition-all duration-300 active:scale-95 hover:border-luxury/50">
-                  <Upload size={20} className="text-luxury" />
-                  <input 
-                    type="file" 
-                    className="hidden" 
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    disabled={uploading}
-                  />
-                </label>
               </div>
-              {uploading && <p className="text-xs text-luxury animate-pulse">Uploading image...</p>}
-              {formData.image_url && (
-                <div className="w-full h-32 bg-black/20 rounded border border-white/5 overflow-hidden group relative">
-                  <img src={formData.image_url} alt="Preview" className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110" />
+              
+              <div>
+                <label className="block text-xs font-medium text-white/40 uppercase mb-1 tracking-wider">Category</label>
+                {!isCustomCategory ? (
+                  <select 
+                    className="w-full bg-white/5 border border-white/10 rounded p-2.5 text-white focus:border-luxury focus:outline-none focus:ring-1 focus:ring-luxury/50 transition-all duration-300"
+                    value={formData.category}
+                    onChange={e => {
+                      if (e.target.value === 'custom') {
+                        setIsCustomCategory(true);
+                      } else {
+                        setFormData({...formData, category: e.target.value});
+                      }
+                    }}
+                  >
+                    <option value="Timepieces">Timepieces</option>
+                    <option value="Fragrance">Fragrance</option>
+                    <option value="Jewelry">Jewelry</option>
+                    <option value="Accessories">Accessories</option>
+                    <option value="custom">+ Custom Category</option>
+                  </select>
+                ) : (
+                  <div className="flex gap-2">
+                    <input 
+                      className="w-full bg-white/5 border border-white/10 rounded p-2.5 text-white focus:border-luxury focus:outline-none focus:ring-1 focus:ring-luxury/50 transition-all duration-300"
+                      value={customCategory}
+                      onChange={e => setCustomCategory(e.target.value)}
+                      placeholder="Enter category name"
+                      autoFocus
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setIsCustomCategory(false)}
+                      className="px-3 bg-white/5 border border-white/10 rounded hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-white/40 uppercase mb-1 tracking-wider">Base Price</label>
+                <input 
+                  type="number"
+                  className="w-full bg-white/5 border border-white/10 rounded p-2.5 text-white focus:border-luxury focus:outline-none focus:ring-1 focus:ring-luxury/50 transition-all duration-300"
+                  value={formData.price}
+                  onChange={e => setFormData({...formData, price: e.target.value})}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-white/40 uppercase mb-1 tracking-wider">Description</label>
+                <textarea 
+                  className="w-full bg-white/5 border border-white/10 rounded p-2.5 text-white focus:border-luxury focus:outline-none focus:ring-1 focus:ring-luxury/50 transition-all duration-300 h-24 resize-none"
+                  value={formData.description}
+                  onChange={e => setFormData({...formData, description: e.target.value})}
+                  placeholder="Product description..."
+                />
+              </div>
+            </div>
+
+            {/* Right Column: Image & Variants */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-white/40 uppercase mb-1 tracking-wider">Main Image</label>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="text"
+                      className="flex-1 bg-white/5 border border-white/10 rounded p-2.5 text-white focus:border-luxury focus:outline-none focus:ring-1 focus:ring-luxury/50 transition-all duration-300 text-sm"
+                      value={formData.image_url}
+                      onChange={e => setFormData({...formData, image_url: e.target.value})}
+                      placeholder="Image URL or upload file"
+                      required
+                    />
+                    <label className="cursor-pointer bg-white/5 hover:bg-white/10 border border-white/10 rounded p-2.5 transition-all duration-300 active:scale-95 hover:border-luxury/50">
+                      <Upload size={20} className="text-luxury" />
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        disabled={uploading}
+                      />
+                    </label>
+                  </div>
+                  {uploading && <p className="text-xs text-luxury animate-pulse">Uploading image...</p>}
+                  {formData.image_url && (
+                    <div className="w-full h-32 bg-black/20 rounded border border-white/5 overflow-hidden group relative">
+                      <img src={formData.image_url} alt="Preview" className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110" />
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
+
+              {/* Variants Section */}
+              <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                <div className="flex justify-between items-center mb-3">
+                  <label className="text-xs font-medium text-white/40 uppercase tracking-wider">
+                    Variants ({formData.variant_type})
+                  </label>
+                  <button 
+                    type="button" 
+                    onClick={handleAddVariant}
+                    className="text-xs bg-luxury/10 text-luxury px-2 py-1 rounded hover:bg-luxury hover:text-void transition-colors"
+                  >
+                    + Add Variant
+                  </button>
+                </div>
+                
+                <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
+                  {variants.map((variant, index) => (
+                    <div key={index} className="flex gap-2 items-start bg-black/20 p-2 rounded border border-white/5">
+                      <div className="flex-1 space-y-2">
+                        <input 
+                          placeholder={formData.variant_type === 'Size' ? "e.g. 50ml" : "e.g. Gold"}
+                          className="w-full bg-white/5 border border-white/10 rounded p-1.5 text-xs text-white focus:border-luxury focus:outline-none"
+                          value={variant.name}
+                          onChange={e => handleVariantChange(index, 'name', e.target.value)}
+                        />
+                        <input 
+                          placeholder="Image URL (Optional)"
+                          className="w-full bg-white/5 border border-white/10 rounded p-1.5 text-xs text-white/60 focus:border-luxury focus:outline-none"
+                          value={variant.imageUrl || ''}
+                          onChange={e => handleVariantChange(index, 'imageUrl', e.target.value)}
+                        />
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={() => handleRemoveVariant(index)}
+                        className="p-1.5 text-white/20 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                  {variants.length === 0 && (
+                    <p className="text-xs text-white/20 text-center py-2 italic">No variants added. Main product will be used.</p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1260,7 +1298,7 @@ const OrdersTab = () => {
           </thead>
           <tbody className="divide-y divide-white/10">
             {orders.map(order => (
-              <tr key={order.id} className="hover:bg-white/5 transition-all duration-200 hover:scale-[1.002] hover:shadow-lg bg-transparent">
+              <tr key={order.id} className="hover:bg-white/5 transition-all duration-200 hover:shadow-lg bg-transparent">
                 <td className="p-4 font-mono text-sm text-luxury align-top">#{order.id.slice(0, 8)}</td>
                 <td className="p-4 align-top">
                   <div className="flex items-center gap-2">
@@ -1428,7 +1466,7 @@ const ContactTab = () => {
             {messages.map(msg => (
               <tr 
                 key={msg.id} 
-                className={`hover:bg-white/5 transition-all duration-500 ease-in-out hover:scale-[1.002] hover:shadow-lg bg-transparent ${
+                className={`hover:bg-white/5 transition-all duration-500 ease-in-out hover:shadow-lg bg-transparent ${
                   deletingId === msg.id ? 'opacity-0 -translate-x-full pointer-events-none' : 'opacity-100'
                 }`}
               >
@@ -1591,7 +1629,7 @@ const AppointmentsTab = () => {
             {appointments.map(apt => (
               <tr 
                 key={apt.id} 
-                className={`hover:bg-white/5 transition-all duration-500 ease-in-out hover:scale-[1.002] hover:shadow-lg bg-transparent ${
+                className={`hover:bg-white/5 transition-all duration-500 ease-in-out hover:shadow-lg bg-transparent ${
                   deletingId === apt.id ? 'opacity-0 border-none' : 'opacity-100'
                 }`}
               >
@@ -1697,10 +1735,89 @@ const AppointmentsTab = () => {
 };
 
 // --- CAREERS TAB ---
+const ViewAnswersModal = ({ application, onClose }: any) => {
+  if (!application) return null;
+  
+  const answers = application.answers || {};
+  const hasAnswers = Object.keys(answers).length > 0;
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-200">
+      <div className="bg-[#1a1a1a] border border-white/10 rounded-lg p-6 w-full max-w-lg shadow-2xl my-8 animate-in zoom-in-95 duration-200">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h3 className="text-lg font-display text-white">Application Details</h3>
+            <p className="text-white/40 text-sm">{application.full_name} - {application.job_title}</p>
+          </div>
+          <button onClick={onClose} className="text-white/40 hover:text-white transition-all duration-300 hover:rotate-90">
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="space-y-6">
+          {/* Contact Info */}
+          <div className="bg-white/5 rounded-lg p-4 border border-white/5">
+            <h4 className="text-xs font-bold text-luxury uppercase tracking-wider mb-3">Contact Information</h4>
+            <div className="grid grid-cols-1 gap-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-white/40">Email:</span>
+                <span className="text-white">{application.email}</span>
+              </div>
+              {application.phone && (
+                <div className="flex justify-between">
+                  <span className="text-white/40">Phone:</span>
+                  <span className="text-white">{application.phone}</span>
+                </div>
+              )}
+              {application.linkedin_url && (
+                <div className="flex justify-between">
+                  <span className="text-white/40">LinkedIn:</span>
+                  <a href={application.linkedin_url} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline truncate max-w-[200px]">
+                    {application.linkedin_url}
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Answers */}
+          <div>
+            <h4 className="text-xs font-bold text-luxury uppercase tracking-wider mb-3">Questionnaire Responses</h4>
+            {hasAnswers ? (
+              <div className="space-y-4">
+                {Object.entries(answers).map(([question, answer]: [string, any], idx) => (
+                  <div key={idx} className="bg-white/5 rounded-lg p-4 border border-white/5">
+                    <p className="text-white/60 text-xs mb-2">{question}</p>
+                    <p className="text-white text-sm">{String(answer)}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 bg-white/5 rounded-lg border border-white/5 border-dashed">
+                <p className="text-white/40 text-sm">No questionnaire answers provided.</p>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        <div className="mt-6 pt-4 border-t border-white/10 flex justify-end">
+          <button 
+            onClick={onClose}
+            className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded transition-colors text-sm"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const CareersTab = () => {
   const [applications, setApplications] = useState<any[]>([]);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [itemToDelete, setItemToDelete] = useState<any>(null);
+  const [viewingApplication, setViewingApplication] = useState<any>(null);
 
   const fetchApplications = async () => {
     const { data } = await supabase.from('job_applications').select('*').order('created_at', { ascending: false });
@@ -1787,7 +1904,7 @@ const CareersTab = () => {
             {applications.map(app => (
               <tr 
                 key={app.id} 
-                className={`hover:bg-white/5 transition-all duration-500 ease-in-out hover:scale-[1.002] hover:shadow-lg bg-transparent ${
+                className={`hover:bg-white/5 transition-all duration-500 ease-in-out hover:shadow-lg bg-transparent ${
                   deletingId === app.id ? 'opacity-0 border-none' : 'opacity-100'
                 }`}
               >
@@ -1820,7 +1937,10 @@ const CareersTab = () => {
                 </td>
                 <td className={`transition-all duration-500 ease-in-out ${deletingId === app.id ? 'p-0 border-none' : 'p-4'}`}>
                   <div className={`transition-all duration-500 ease-in-out overflow-hidden ${deletingId === app.id ? 'max-h-0 opacity-0' : 'max-h-20 opacity-100'}`}>
-                    <button className="text-xs bg-white/5 hover:bg-white/10 px-2 py-1 rounded text-white/60 transition-all duration-300 hover:text-white active:scale-95">
+                    <button 
+                      onClick={() => setViewingApplication(app)}
+                      className="text-xs bg-white/5 hover:bg-white/10 px-2 py-1 rounded text-white/60 transition-all duration-300 hover:text-white active:scale-95"
+                    >
                       View Answers
                     </button>
                   </div>
@@ -1874,7 +1994,10 @@ const CareersTab = () => {
               )}
               
               <div className="flex gap-2">
-                <button className="text-xs bg-white/5 hover:bg-white/10 px-2 py-1.5 rounded text-white/60 transition-all duration-300 hover:text-white active:scale-95">
+                <button 
+                  onClick={() => setViewingApplication(app)}
+                  className="text-xs bg-white/5 hover:bg-white/10 px-2 py-1.5 rounded text-white/60 transition-all duration-300 hover:text-white active:scale-95"
+                >
                   View Answers
                 </button>
                 <button 
@@ -1897,6 +2020,199 @@ const CareersTab = () => {
         title="Delete Application"
         message="Are you sure you want to delete this application? This action cannot be undone."
       />
+
+      <ViewAnswersModal 
+        application={viewingApplication} 
+        onClose={() => setViewingApplication(null)} 
+      />
+    </div>
+  );
+};
+
+const SettingsTab = () => {
+  const { user } = useAuth();
+  const [storeName, setStoreName] = useState('AETERNA Luxury');
+  const [supportEmail, setSupportEmail] = useState('support@aeterna.com');
+  const [notifications, setNotifications] = useState({
+    newOrders: true,
+    lowStock: true,
+    newMessages: false
+  });
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setIsSaving(false);
+    alert('Settings saved successfully!');
+  };
+
+  return (
+    <div className="space-y-8 animate-fade-in max-w-4xl">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-display text-white">System Settings</h2>
+        <button 
+          onClick={handleSave}
+          disabled={isSaving}
+          className="bg-luxury text-void px-6 py-2 rounded-lg font-medium hover:bg-white transition-all duration-300 shadow-[0_0_15px_rgba(232,207,160,0.2)] disabled:opacity-50 active:scale-95"
+        >
+          {isSaving ? 'Saving...' : 'Save Changes'}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Store Profile */}
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6 space-y-6">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-luxury/10 rounded-lg text-luxury">
+              <LayoutDashboard size={20} />
+            </div>
+            <h3 className="text-lg font-medium text-white">Store Profile</h3>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-white/40 uppercase mb-1 tracking-wider">Store Name</label>
+              <input 
+                type="text"
+                value={storeName}
+                onChange={(e) => setStoreName(e.target.value)}
+                className="w-full bg-black/20 border border-white/10 rounded p-3 text-white focus:border-luxury focus:outline-none focus:ring-1 focus:ring-luxury/50 transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-white/40 uppercase mb-1 tracking-wider">Support Email</label>
+              <input 
+                type="email"
+                value={supportEmail}
+                onChange={(e) => setSupportEmail(e.target.value)}
+                className="w-full bg-black/20 border border-white/10 rounded p-3 text-white focus:border-luxury focus:outline-none focus:ring-1 focus:ring-luxury/50 transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-white/40 uppercase mb-1 tracking-wider">Currency</label>
+              <div className="w-full bg-black/20 border border-white/10 rounded p-3 text-white/60 cursor-not-allowed flex justify-between items-center">
+                <span>USD ($)</span>
+                <span className="text-xs bg-white/10 px-2 py-0.5 rounded">Locked</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Admin Profile */}
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6 space-y-6">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400">
+              <Users size={20} />
+            </div>
+            <h3 className="text-lg font-medium text-white">Admin Profile</h3>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-white/40 uppercase mb-1 tracking-wider">Email Address</label>
+              <input 
+                type="email"
+                value={user?.email || ''}
+                disabled
+                className="w-full bg-black/20 border border-white/10 rounded p-3 text-white/60 cursor-not-allowed"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-white/40 uppercase mb-1 tracking-wider">Role</label>
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 bg-luxury/10 text-luxury border border-luxury/20 rounded text-xs font-bold uppercase tracking-wider">Super Admin</span>
+              </div>
+            </div>
+            <div className="pt-2">
+              <button className="text-sm text-luxury hover:text-white transition-colors underline underline-offset-4">
+                Change Password
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Notifications */}
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6 space-y-6">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-purple-500/10 rounded-lg text-purple-400">
+              <Bell size={20} />
+            </div>
+            <h3 className="text-lg font-medium text-white">Notifications</h3>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 bg-black/20 rounded border border-white/5">
+              <div>
+                <p className="text-white text-sm font-medium">New Order Alerts</p>
+                <p className="text-white/40 text-xs">Get notified when a new order is placed</p>
+              </div>
+              <button 
+                onClick={() => setNotifications({...notifications, newOrders: !notifications.newOrders})}
+                className={`w-10 h-5 rounded-full relative transition-colors duration-300 ${notifications.newOrders ? 'bg-luxury' : 'bg-white/10'}`}
+              >
+                <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all duration-300 ${notifications.newOrders ? 'left-6' : 'left-1'}`} />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between p-3 bg-black/20 rounded border border-white/5">
+              <div>
+                <p className="text-white text-sm font-medium">Low Stock Warnings</p>
+                <p className="text-white/40 text-xs">Alert when product inventory is low</p>
+              </div>
+              <button 
+                onClick={() => setNotifications({...notifications, lowStock: !notifications.lowStock})}
+                className={`w-10 h-5 rounded-full relative transition-colors duration-300 ${notifications.lowStock ? 'bg-luxury' : 'bg-white/10'}`}
+              >
+                <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all duration-300 ${notifications.lowStock ? 'left-6' : 'left-1'}`} />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between p-3 bg-black/20 rounded border border-white/5">
+              <div>
+                <p className="text-white text-sm font-medium">Message Alerts</p>
+                <p className="text-white/40 text-xs">Notifications for new contact messages</p>
+              </div>
+              <button 
+                onClick={() => setNotifications({...notifications, newMessages: !notifications.newMessages})}
+                className={`w-10 h-5 rounded-full relative transition-colors duration-300 ${notifications.newMessages ? 'bg-luxury' : 'bg-white/10'}`}
+              >
+                <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all duration-300 ${notifications.newMessages ? 'left-6' : 'left-1'}`} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* System Info */}
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6 space-y-6">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-400">
+              <Shield size={20} />
+            </div>
+            <h3 className="text-lg font-medium text-white">System Information</h3>
+          </div>
+          
+          <div className="space-y-3">
+            <div className="flex justify-between text-sm border-b border-white/5 pb-2">
+              <span className="text-white/40">Version</span>
+              <span className="text-white font-mono">v2.4.0</span>
+            </div>
+            <div className="flex justify-between text-sm border-b border-white/5 pb-2">
+              <span className="text-white/40">Environment</span>
+              <span className="text-emerald-400 font-medium">Production</span>
+            </div>
+            <div className="flex justify-between text-sm border-b border-white/5 pb-2">
+              <span className="text-white/40">Database Status</span>
+              <span className="text-emerald-400 font-medium">Connected</span>
+            </div>
+            <div className="flex justify-between text-sm pt-1">
+              <span className="text-white/40">Last Backup</span>
+              <span className="text-white">Today, 04:00 AM</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

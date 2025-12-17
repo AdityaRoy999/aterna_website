@@ -190,9 +190,9 @@ const JournalArticleModal: React.FC<{ article: Article; onClose: () => void }> =
   };
 
   return createPortal(
-    <div className={`fixed inset-0 z-[100] flex flex-col bg-void overflow-y-auto custom-scrollbar transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${isClosing ? 'opacity-0 translate-y-8' : (isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8')}`}>
+    <div className={`fixed inset-0 z-[100] bg-void transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${isClosing ? 'opacity-0 translate-y-8' : (isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8')}`}>
         {/* Close / Nav */}
-        <div className="fixed top-0 left-0 w-full z-20 flex justify-between items-center p-6 md:p-10 pointer-events-none">
+        <div className="absolute top-0 left-0 w-full z-20 flex justify-between items-center p-6 md:p-10 pointer-events-none">
             <button 
                 onClick={handleClose}
                 className="pointer-events-auto w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-offwhite hover:bg-luxury hover:text-void transition-all duration-300 group"
@@ -208,63 +208,66 @@ const JournalArticleModal: React.FC<{ article: Article; onClose: () => void }> =
             </div>
         </div>
 
-        {/* Article Hero */}
-        <div className="w-full h-[60vh] relative shrink-0">
-            <img src={article.imageUrl} alt={article.title} className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-void via-void/50 to-transparent" />
-            
-            <div className="absolute bottom-0 left-0 w-full p-6 md:p-20 max-w-5xl">
-                 <span className="inline-block bg-luxury text-void font-ui text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-6">
-                    {article.category}
-                 </span>
-                 <h1 className="font-display text-4xl md:text-6xl text-offwhite leading-tight mb-6">
-                    {article.title}
-                 </h1>
-                 {article.subtitle && (
-                    <p className="font-script italic text-2xl text-offwhite/80 max-w-3xl">
-                        {article.subtitle}
-                    </p>
-                 )}
+        {/* Scrollable Content */}
+        <div className="absolute inset-0 overflow-y-auto custom-scrollbar">
+            {/* Article Hero */}
+            <div className="w-full h-[60vh] relative shrink-0">
+                <img src={article.imageUrl} alt={article.title} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-void via-void/50 to-transparent" />
+                
+                <div className="absolute bottom-0 left-0 w-full p-6 md:p-20 max-w-5xl">
+                     <span className="inline-block bg-luxury text-void font-ui text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-6">
+                        {article.category}
+                     </span>
+                     <h1 className="font-display text-4xl md:text-6xl text-offwhite leading-tight mb-6">
+                        {article.title}
+                     </h1>
+                     {article.subtitle && (
+                        <p className="font-script italic text-2xl text-offwhite/80 max-w-3xl">
+                            {article.subtitle}
+                        </p>
+                     )}
+                </div>
             </div>
-        </div>
 
-        {/* Article Content */}
-        <div className="w-full max-w-3xl mx-auto px-6 py-20">
-            {/* Meta Data */}
-            <div className="flex flex-wrap items-center gap-8 border-b border-white/10 pb-12 mb-12 text-offwhite/50 font-ui text-xs uppercase tracking-widest">
-                 {article.author && (
+            {/* Article Content */}
+            <div className="w-full max-w-3xl mx-auto px-6 py-20">
+                {/* Meta Data */}
+                <div className="flex flex-wrap items-center gap-8 border-b border-white/10 pb-12 mb-12 text-offwhite/50 font-ui text-xs uppercase tracking-widest">
+                     {article.author && (
+                         <div className="flex items-center gap-2">
+                            <span className="w-8 h-[1px] bg-luxury"></span>
+                            <span>{article.author}</span>
+                         </div>
+                     )}
                      <div className="flex items-center gap-2">
-                        <span className="w-8 h-[1px] bg-luxury"></span>
-                        <span>{article.author}</span>
+                        <Calendar size={14} />
+                        <span>{article.date}</span>
                      </div>
-                 )}
-                 <div className="flex items-center gap-2">
-                    <Calendar size={14} />
-                    <span>{article.date}</span>
-                 </div>
-                 {article.readTime && (
-                     <div className="flex items-center gap-2">
-                        <Clock size={14} />
-                        <span>{article.readTime}</span>
-                     </div>
-                 )}
-            </div>
+                     {article.readTime && (
+                         <div className="flex items-center gap-2">
+                            <Clock size={14} />
+                            <span>{article.readTime}</span>
+                         </div>
+                     )}
+                </div>
 
-            {/* Text */}
-            <div className="font-body text-offwhite/80 text-lg leading-relaxed space-y-6 [&_strong]:text-white [&_strong]:font-bold">
-                {article.content}
-            </div>
+                {/* Text */}
+                <div className="font-body text-offwhite/80 text-lg leading-relaxed space-y-6 [&_strong]:text-white [&_strong]:font-bold">
+                    {article.content}
+                </div>
 
-            {/* Footer */}
-            <div className="mt-20 pt-12 border-t border-white/10 flex justify-between items-center">
-                 <p className="font-script text-2xl text-offwhite/40 italic">Thanks for reading.</p>
-                 <button 
-                    onClick={handleClose}
-                    className="font-ui text-luxury uppercase tracking-widest text-xs hover:text-white transition-colors"
-                    data-hover="true"
-                >
-                    Back to Journal
-                 </button>
+                {/* Footer */}
+                <div className="mt-20 pt-12 border-t border-white/10 flex justify-between items-center">
+                     <p className="font-script text-2xl text-offwhite/40 italic">Thanks for reading.</p>
+                     <button 
+                        onClick={handleClose}
+                        className="font-ui text-luxury uppercase tracking-widest text-xs hover:text-white transition-colors"
+                        data-hover="true"
+                    >
+                        Back to Journal
+                     </button>
+                </div>
             </div>
         </div>
     </div>,
