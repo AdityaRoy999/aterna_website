@@ -146,6 +146,15 @@ export const Checkout: React.FC<CheckoutProps> = ({ onNavigate }) => {
             .update({ status: 'processing', payment_id: response.razorpay_payment_id })
             .eq('id', newOrderId);
 
+          // Update Stock
+          for (const item of items) {
+            const { error: stockError } = await supabase.rpc('decrement_stock', {
+              product_id: item.id.split('-')[0],
+              quantity_to_decrement: item.quantity
+            });
+            if (stockError) console.error('Error updating stock for', item.name, stockError);
+          }
+
           // Send Email
           try {
             const trackingLink = `${window.location.origin}?page=tracking&id=${newOrderId}`;

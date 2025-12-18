@@ -741,6 +741,7 @@ const ProductsTab = () => {
               { label: 'Name', key: 'name' },
               { label: 'Category', key: 'category' },
               { label: 'Price', key: 'price' },
+              { label: 'Quantity', key: 'quantity' },
               { label: 'Status', key: 'status_label' },
               { label: 'Created At', key: 'created_at' }
             ]} 
@@ -761,6 +762,7 @@ const ProductsTab = () => {
               <th className="p-4">Product Details</th>
               <th className="p-4">Category</th>
               <th className="p-4">Price</th>
+              <th className="p-4">Quantity</th>
               <th className="p-4">Status</th>
               <th className="p-4 text-right">Actions</th>
             </tr>
@@ -794,6 +796,11 @@ const ProductsTab = () => {
                 <td className={`transition-all duration-500 ease-in-out ${deletingId === product.id ? 'p-0 border-none' : 'p-4'}`}>
                   <div className={`transition-all duration-500 ease-in-out overflow-hidden ${deletingId === product.id ? 'max-h-0 opacity-0' : 'max-h-24 opacity-100'}`}>
                     <span className="font-mono text-luxury">${product.price}</span>
+                  </div>
+                </td>
+                <td className={`transition-all duration-500 ease-in-out ${deletingId === product.id ? 'p-0 border-none' : 'p-4'}`}>
+                  <div className={`transition-all duration-500 ease-in-out overflow-hidden ${deletingId === product.id ? 'max-h-0 opacity-0' : 'max-h-24 opacity-100'}`}>
+                    <span className="font-mono text-white/80">{product.quantity || 0}</span>
                   </div>
                 </td>
                 <td className={`transition-all duration-500 ease-in-out ${deletingId === product.id ? 'p-0 border-none' : 'p-4'}`}>
@@ -885,6 +892,7 @@ const ProductModal = ({ product, onClose, onSave }: any) => {
   const [formData, setFormData] = useState({
     name: product?.name || '',
     price: product?.price || '',
+    quantity: product?.quantity || 0,
     category: product?.category || 'Timepieces',
     image_url: product?.image_url || '',
     description: product?.description || '',
@@ -1047,6 +1055,17 @@ const ProductModal = ({ product, onClose, onSave }: any) => {
                   className="w-full bg-white/5 border border-white/10 rounded p-2.5 text-white focus:border-luxury focus:outline-none focus:ring-1 focus:ring-luxury/50 transition-all duration-300"
                   value={formData.price}
                   onChange={e => setFormData({...formData, price: e.target.value})}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-white/40 uppercase mb-1 tracking-wider">Quantity</label>
+                <input 
+                  type="number"
+                  className="w-full bg-white/5 border border-white/10 rounded p-2.5 text-white focus:border-luxury focus:outline-none focus:ring-1 focus:ring-luxury/50 transition-all duration-300"
+                  value={formData.quantity}
+                  onChange={e => setFormData({...formData, quantity: parseInt(e.target.value) || 0})}
                   required
                 />
               </div>

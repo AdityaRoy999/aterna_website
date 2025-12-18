@@ -12,6 +12,7 @@ export interface Product {
   category: string;
   imageUrl: string;
   description?: string;
+  quantity?: number;
   color?: string;
   // Fix: Changed from specific literals to string to support combined/responsive classes
   span?: string;
