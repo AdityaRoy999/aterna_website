@@ -19,7 +19,15 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items, setItems] = useState<CartItem[]>(() => {
+    try {
+      const savedCart = localStorage.getItem('aeterna_cart');
+      return savedCart ? JSON.parse(savedCart) : [];
+    } catch (e) {
+      console.error('Failed to parse cart', e);
+      return [];
+    }
+  });
   const [isCartOpen, setIsCartOpen] = useState(false);
   const { user } = useAuth();
 
@@ -52,6 +60,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchServerCart = async () => {
     if (!user) return;
     try {
+      console.log('Fetching server cart for user:', user.id);
       // 1. Fetch Cart Items
       const { data: cartData, error: cartError } = await supabase
         .from('cart_items')
@@ -110,14 +119,37 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const syncItemToServer = async (item: CartItem) => {
     if (!user) return;
-    const originalProductId = item.id.includes('-') ? item.id.split('-')[0] : item.id;
+    console.log('Syncing item to server:', item);
+    
+    // Ensure we are using the UUID, not the composite ID
+    // Fix: UUIDs contain hyphens, so splitting by '-' breaks them. 
+    // We need to split by the LAST hyphen which separates the ID from the variant.
+    let originalProductId = item.id;
+    if (item.selectedColor && item.id.endsWith(`-${item.selectedColor}`)) {
+        originalProductId = item.id.slice(0, -(item.selectedColor.length + 1));
+    } else if (item.id.includes('-') && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id)) {
+        // Fallback for legacy IDs or other formats if needed, but for UUIDs the above check is safer
+        // If it's a UUID, it has 4 hyphens. If it has more, it might be a composite.
+        // But safer to rely on the logic that we constructed the ID as `${product.id}-${color}`
+        // So we just strip the suffix.
+    }
 
-    await supabase.from('cart_items').upsert({
+    // Validate UUID format before sending
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(originalProductId)) {
+      console.error('Invalid Product ID (not a UUID):', originalProductId);
+      return;
+    }
+
+    const { error } = await supabase.from('cart_items').upsert({
       user_id: user.id,
       product_id: originalProductId,
       variant_name: item.selectedColor,
       quantity: item.quantity
     }, { onConflict: 'user_id, product_id, variant_name' });
+    
+    if (error) console.error('Error syncing item:', error);
+    else console.log('Successfully synced item to server');
   };
 
   const removeItemFromServer = async (productId: string, variantName: string) => {
@@ -130,29 +162,35 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addToCart = (product: Product, quantity = 1, color = 'Gold') => {
+    const uniqueId = `${product.id}-${color}`;
+    
     setItems(prev => {
-      const uniqueId = `${product.id}-${color}`;
       const existing = prev.find(item => item.id === uniqueId);
       let newItems;
+      let itemToSync;
       
       if (existing) {
+        const newQuantity = existing.quantity + quantity;
         newItems = prev.map(item => 
           item.id === uniqueId 
-            ? { ...item, quantity: item.quantity + quantity }
+            ? { ...item, quantity: newQuantity }
             : item
         );
+        itemToSync = { ...existing, quantity: newQuantity };
       } else {
-        newItems = [...prev, { ...product, id: uniqueId, quantity, selectedColor: color }];
+        const newItem = { ...product, id: uniqueId, quantity, selectedColor: color };
+        newItems = [...prev, newItem];
+        itemToSync = newItem;
       }
       
       // Sync to server
-      if (user) {
-        const itemToSync = newItems.find(i => i.id === uniqueId);
-        if (itemToSync) syncItemToServer(itemToSync);
+      if (user && itemToSync) {
+        syncItemToServer(itemToSync);
       }
       
       return newItems;
     });
+    // setIsCartOpen(true); // Removed to prevent auto-opening
   };
 
   const removeFromCart = (uniqueId: string) => {
@@ -171,18 +209,17 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       removeFromCart(uniqueId);
       return;
     }
-    setItems(prev => {
-      const newItems = prev.map(item => 
-        item.id === uniqueId ? { ...item, quantity } : item
-      );
-      
-      if (user) {
-        const item = newItems.find(i => i.id === uniqueId);
-        if (item) syncItemToServer(item);
+    
+    setItems(prev => prev.map(item => 
+      item.id === uniqueId ? { ...item, quantity } : item
+    ));
+    
+    if (user) {
+      const item = items.find(i => i.id === uniqueId);
+      if (item) {
+        syncItemToServer({ ...item, quantity });
       }
-      
-      return newItems;
-    });
+    }
   };
 
   const clearCart = async () => {

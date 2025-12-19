@@ -61,6 +61,122 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message }: any) 
   );
 };
 
+const NotificationsMenu = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetchNotifications();
+    
+    // Subscribe to new notifications
+    const subscription = supabase
+      .channel('notifications')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, payload => {
+        setNotifications(prev => [payload.new, ...prev]);
+        setUnreadCount(prev => prev + 1);
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const fetchNotifications = async () => {
+    const { data } = await supabase
+      .from('notifications')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(10);
+    
+    if (data) {
+      setNotifications(data);
+      setUnreadCount(data.filter(n => !n.is_read).length);
+    }
+  };
+
+  const markAsRead = async (id: string) => {
+    await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+    setUnreadCount(prev => Math.max(0, prev - 1));
+  };
+
+  const markAllAsRead = async () => {
+    await supabase.from('notifications').update({ is_read: true }).eq('is_read', false);
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+    setUnreadCount(0);
+  };
+
+  return (
+    <div className="relative" ref={ref}>
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="p-2 text-white/40 hover:text-luxury hover:bg-white/5 rounded-full relative transition-colors"
+      >
+        <Bell size={20} />
+        {unreadCount > 0 && (
+          <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+        )}
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 mt-2 w-80 bg-[#1a1a1a] border border-white/10 rounded-lg shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200">
+          <div className="p-3 border-b border-white/10 flex justify-between items-center">
+            <h3 className="text-sm font-semibold text-white">Notifications</h3>
+            {unreadCount > 0 && (
+              <button onClick={markAllAsRead} className="text-xs text-luxury hover:text-white transition-colors">
+                Mark all read
+              </button>
+            )}
+          </div>
+          <div className="max-h-96 overflow-y-auto">
+            {notifications.length === 0 ? (
+              <div className="p-8 text-center text-white/40 text-sm">
+                No notifications
+              </div>
+            ) : (
+              notifications.map(notification => (
+                <div 
+                  key={notification.id}
+                  onClick={() => markAsRead(notification.id)}
+                  className={`p-4 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer ${!notification.is_read ? 'bg-white/[0.02]' : ''}`}
+                >
+                  <div className="flex gap-3">
+                    <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${!notification.is_read ? 'bg-luxury' : 'bg-transparent'}`} />
+                    <div>
+                      <p className={`text-sm mb-1 ${!notification.is_read ? 'text-white font-medium' : 'text-white/60'}`}>
+                        {notification.title}
+                      </p>
+                      <p className="text-xs text-white/40 mb-2 line-clamp-2">
+                        {notification.message}
+                      </p>
+                      <p className="text-[10px] text-white/20 uppercase tracking-wider">
+                        {new Date(notification.created_at).toLocaleDateString()} • {new Date(notification.created_at).toLocaleTimeString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const ExportMenu = ({ data, filename, headers }: any) => {
   const [isOpen, setIsOpen] = useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
@@ -465,10 +581,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
             <h2 className="text-lg font-display text-white capitalize tracking-wide">{activeTab.replace('_', ' ')}</h2>
           </div>
           <div className="flex items-center gap-4">
-            <button className="p-2 text-white/40 hover:text-luxury hover:bg-white/5 rounded-full relative transition-colors">
-              <Bell size={20} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
+            <NotificationsMenu />
             <button 
               onClick={() => setActiveTab('settings')}
               className={`p-2 rounded-full transition-colors ${activeTab === 'settings' ? 'text-luxury bg-white/5' : 'text-white/40 hover:text-luxury hover:bg-white/5'}`}

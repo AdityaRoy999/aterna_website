@@ -3,6 +3,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../src/supabaseClient';
 import emailjs from '@emailjs/browser';
+import { sendAdminAlert } from '../lib/notifications';
 import { ArrowLeft, CreditCard, Lock, CheckCircle, Truck, Package, Search } from 'lucide-react';
 
 interface CheckoutProps {
@@ -110,14 +111,37 @@ export const Checkout: React.FC<CheckoutProps> = ({ onNavigate }) => {
       setOrderId(newOrderId);
 
       // 2. Create Order Items
-      const orderItems = items.map(item => ({
-        order_id: newOrderId,
-        product_id: item.id.split('-')[0],
-        product_name: item.name,
-        quantity: item.quantity,
-        price: item.price,
-        variant_name: item.selectedColor
-      }));
+      const orderItems = items.map(item => {
+        // Fix: Handle UUIDs correctly. 
+        // CartItem.id is constructed as `${product_id}-${variant_name}` in CartContext.
+        // Since UUIDs contain hyphens, we can't just split by '-'.
+        // However, we know the variant name is at the end.
+        // But wait, CartContext says: id: `${item.product_id}-${item.variant_name}`
+        // If product_id is a UUID (e.g. 123-456-789), and variant is "Gold", id is "123-456-789-Gold".
+        // Splitting by '-' gives ["123", "456", "789", "Gold"].
+        // We need to reconstruct the UUID.
+        
+        // Better approach: We know the variant name is stored in item.selectedColor.
+        // So we can just strip the variant name from the end if it exists.
+        
+        let productId = item.id;
+        if (item.selectedColor && item.id.endsWith(`-${item.selectedColor}`)) {
+           productId = item.id.slice(0, -(item.selectedColor.length + 1));
+        } else if (item.id.split('-').length > 5) {
+           // Fallback: If it looks like UUID-Variant (more than 4 hyphens), try to guess.
+           // A UUID has 36 chars.
+           productId = item.id.substring(0, 36);
+        }
+
+        return {
+          order_id: newOrderId,
+          product_id: productId,
+          product_name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          variant_name: item.selectedColor
+        };
+      });
 
       const { error: itemsError } = await supabase
         .from('order_items')
@@ -146,22 +170,70 @@ export const Checkout: React.FC<CheckoutProps> = ({ onNavigate }) => {
             .update({ status: 'processing', payment_id: response.razorpay_payment_id })
             .eq('id', newOrderId);
 
-          // Update Stock
+          // Update Stock and Check for Low Stock
           for (const item of items) {
+            let productId = item.id;
+            if (item.selectedColor && item.id.endsWith(`-${item.selectedColor}`)) {
+               productId = item.id.slice(0, -(item.selectedColor.length + 1));
+            } else if (item.id.split('-').length > 5) {
+               productId = item.id.substring(0, 36);
+            }
+
             const { error: stockError } = await supabase.rpc('decrement_stock', {
-              product_id: item.id.split('-')[0],
+              product_id: productId,
               quantity_to_decrement: item.quantity
             });
-            if (stockError) console.error('Error updating stock for', item.name, stockError);
+            if (stockError) {
+              console.error('Error updating stock for', item.name, stockError);
+            } else {
+              // Check remaining stock
+              const { data: productData } = await supabase
+                .from('products')
+                .select('quantity, name')
+                .eq('id', productId)
+                .single();
+              
+              if (productData && productData.quantity <= 3) {
+                // Don't await admin alerts to prevent blocking checkout
+                sendAdminAlert(
+                  'stock',
+                  'Low Stock Alert',
+                  `Product "${productData.name}" is running low. Only ${productData.quantity} remaining.`,
+                  productId
+                ).catch(e => console.error('Stock alert failed', e));
+              }
+            }
           }
 
-          // Send Email
+          // Send Admin Alert for New Order (Safely)
           try {
+            sendAdminAlert(
+              'order',
+              'New Order Received',
+              `New order #${newOrderId} received from ${formData.firstName} ${formData.lastName}. Total: ${currency === 'INR' ? '₹' : '$'}${cartTotal}`,
+              newOrderId
+            ).catch(e => console.warn('Admin alert background error:', e));
+          } catch (e) {
+            console.warn('Failed to initiate admin alert:', e);
+          }
+
+          // Send Email to Customer
+          try {
+            console.log('Preparing customer email...');
             const trackingLink = `${window.location.origin}?page=tracking&id=${newOrderId}`;
+            
+            // Ensure data is present
+            const customerName = (formData.firstName || 'Customer') + ' ' + (formData.lastName || '');
+            const customerEmail = formData.email;
+            
+            if (!customerEmail) {
+              throw new Error('No customer email address found');
+            }
+
             const emailParams = {
               order_id: newOrderId,
-              to_name: `${formData.firstName} ${formData.lastName}`,
-              to_email: formData.email,
+              to_name: customerName,
+              to_email: customerEmail,
               total_amount: cartTotal.toLocaleString(),
               order_date: new Date().toLocaleDateString(),
               tracking_link: trackingLink,
@@ -174,19 +246,25 @@ export const Checkout: React.FC<CheckoutProps> = ({ onNavigate }) => {
               `).join('')
             };
 
-            await emailjs.send(
+            console.log('Sending customer email with template:', import.meta.env.VITE_EMAILJS_TEMPLATE_ID);
+            
+            const response = await emailjs.send(
               import.meta.env.VITE_EMAILJS_SERVICE_ID,
               import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
               emailParams,
               import.meta.env.VITE_EMAILJS_PUBLIC_KEY
             );
+            
+            console.log('Customer email sent successfully!', response.status, response.text);
           } catch (emailError) {
-            console.error('Failed to send email:', emailError);
+            console.error('CRITICAL: Failed to send customer email:', emailError);
+            // Don't block success screen, but log it
           }
 
           clearCart();
           setIsSuccess(true);
           setIsProcessing(false);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         },
         prefill: {
           name: `${formData.firstName} ${formData.lastName}`,

@@ -14,6 +14,7 @@ interface ProfileData {
   state: string;
   postal_code: string;
   country: string;
+  telegram_secret_code?: string;
 }
 
 interface Order {
@@ -206,6 +207,24 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
                         onChange={e => setProfile({...profile, phone: e.target.value})}
                         className="w-full bg-white/5 border border-white/10 rounded-lg py-3 px-4 text-white focus:border-luxury focus:outline-none transition-colors"
                       />
+                    </div>
+                  </div>
+
+                  <div className="border-t border-white/10 pt-8">
+                    <h3 className="font-display text-xl text-white mb-6 flex items-center gap-2">
+                      <span className="text-2xl">📱</span> Telegram Integration
+                    </h3>
+                    <div className="bg-white/5 border border-white/10 rounded-lg p-6">
+                      <p className="text-white/60 mb-4">
+                        Connect your Telegram account to manage orders, view cart, and get instant alerts.
+                        Send this code to our bot <a href="https://t.me/AeternaAdminBot" target="_blank" className="text-luxury hover:underline">@AeternaAdminBot</a>.
+                      </p>
+                      <div className="flex items-center gap-4">
+                        <div className="bg-black/40 border border-white/10 rounded px-4 py-2 font-mono text-xl text-luxury tracking-widest select-all">
+                          {profile.telegram_secret_code || 'Please contact support'}
+                        </div>
+                        <span className="text-xs text-white/40 uppercase tracking-widest">Secret Code</span>
+                      </div>
                     </div>
                   </div>
 

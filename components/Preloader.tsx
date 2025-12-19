@@ -4,13 +4,20 @@ export const Preloader: React.FC<{ onComplete: () => void }> = ({ onComplete }) 
   const [animationStep, setAnimationStep] = useState(0);
 
   useEffect(() => {
+    // Lock scroll
+    document.body.style.overflow = 'hidden';
+
     // Timeline of animation events
     const timer1 = setTimeout(() => setAnimationStep(1), 500); // Logo In
     const timer2 = setTimeout(() => setAnimationStep(2), 2000); // Text Reveal
     const timer3 = setTimeout(() => setAnimationStep(3), 3500); // Fade Out
-    const timer4 = setTimeout(() => onComplete(), 4000); // Unmount
+    const timer4 = setTimeout(() => {
+      document.body.style.overflow = 'auto'; // Unlock scroll
+      onComplete();
+    }, 4000); // Unmount
 
     return () => {
+      document.body.style.overflow = 'auto'; // Ensure unlock on cleanup
       clearTimeout(timer1);
       clearTimeout(timer2);
       clearTimeout(timer3);

@@ -4,6 +4,7 @@ import { Mail, Phone, MapPin, Clock, Send, CheckCircle } from 'lucide-react';
 import { CustomSelect } from './CustomInputs';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../src/supabaseClient';
+import { sendAdminAlert } from '../lib/notifications';
 
 export const ContactUs: React.FC = () => {
   const { user } = useAuth();
@@ -49,8 +50,17 @@ export const ContactUs: React.FC = () => {
 
       if (error) throw error;
 
+      // Send Admin Alert
+      await sendAdminAlert(
+        'message',
+        'New Contact Message',
+        `New message from ${formData.name} (${formData.email}): ${subject}`,
+        undefined
+      );
+
       setIsSuccess(true);
       setFormData({ name: '', email: '', message: '' });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       console.error('Error sending message:', error);
       alert('Failed to send message. Please try again.');
