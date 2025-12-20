@@ -7,6 +7,7 @@ import { Journal } from './components/Journal';
 import { Footer } from './components/Footer';
 import { Shop } from './components/Shop';
 import { CustomCursor } from './components/CustomCursor';
+
 import { Preloader } from './components/Preloader';
 import { Chatbot } from './components/Chatbot';
 import { CartSidebar } from './components/CartSidebar';
@@ -30,6 +31,7 @@ import AOS from 'aos';
 import 'aos/dist/aos.css';
 
 const App: React.FC = () => {
+  // Removed fluid glass cursor mode
   const [currentPage, setCurrentPage] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     const page = params.get('page');
