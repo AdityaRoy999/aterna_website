@@ -1,6 +1,6 @@
 # AETERNA - Timeless Luxury Website
 
-![Logo](https://placehold.co/100x100?text=AETERNA+Logo)
+![Logo](/logo-main-readme.png)
 
 AETERNA is a meticulously crafted luxury e-commerce website, designed to offer a seamless and premium shopping experience. Featuring elegant UI, smooth animations, comprehensive product management, and robust user authentication, this platform embodies sophistication and functionality.
 
