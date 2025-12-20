@@ -197,8 +197,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setItems(prev => {
       const item = prev.find(i => i.id === uniqueId);
       if (item && user) {
-        const originalId = uniqueId.includes('-') ? uniqueId.split('-')[0] : uniqueId;
-        removeItemFromServer(originalId, item.selectedColor || 'Gold');
+        let originalProductId = uniqueId;
+        if (item.selectedColor && uniqueId.endsWith(`-${item.selectedColor}`)) {
+            originalProductId = uniqueId.slice(0, -(item.selectedColor.length + 1));
+        }
+        removeItemFromServer(originalProductId, item.selectedColor || 'Gold');
       }
       return prev.filter(item => item.id !== uniqueId);
     });

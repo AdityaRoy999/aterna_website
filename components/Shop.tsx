@@ -34,6 +34,7 @@ const QuickViewModal: React.FC<{ product: Product; onClose: () => void }> = ({ p
   const handleAddToCart = () => {
     const productToAdd = { ...product, imageUrl: displayImage };
     addToCart(productToAdd, 1, selectedVariant);
+    // Close modal after adding to cart to return to page state and allow card to disappear
     handleClose();
   };
 
@@ -335,6 +336,8 @@ export const Shop: React.FC<ShopProps> = ({ initialProductId }) => {
     }
     return filtered;
   }, [activeCategory, sortOption, showBookmarkedOnly, bookmarkedIds, products]);
+
+  
 
   const handleSortChange = (option: SortOption) => {
     setSortOption(option);

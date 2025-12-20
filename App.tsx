@@ -24,6 +24,7 @@ import { Wishlist } from './components/Wishlist';
 import { AdminDashboard } from './admin/AdminDashboard';
 import { useAuth } from './context/AuthContext';
 import { AuthModal } from './components/AuthModal';
+import { CursorProvider } from './context/CursorContext';
 import Lenis from 'lenis';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
@@ -189,16 +190,17 @@ const App: React.FC = () => {
   const isAdminPage = currentPage === 'admin';
 
   return (
-    <>
-      {isLoading && <Preloader onComplete={() => setIsLoading(false)} />}
-    
-      <div className={`min-h-screen relative overflow-x-hidden ${
-        isAdminPage 
-          ? 'bg-void text-offwhite font-body cursor-none selection:bg-luxury selection:text-void' 
-          : 'bg-void text-offwhite font-body cursor-none selection:bg-luxury selection:text-void'
-      }`}>
-        {/* Global Elements */}
-        <CustomCursor />
+    <CursorProvider>
+      <>
+        {isLoading && <Preloader onComplete={() => setIsLoading(false)} />}
+      
+        <div className={`min-h-screen relative overflow-x-hidden ${
+          isAdminPage 
+            ? 'bg-void text-offwhite font-body cursor-none selection:bg-luxury selection:text-void' 
+            : 'bg-void text-offwhite font-body cursor-none selection:bg-luxury selection:text-void'
+        }`}>
+          {/* Global Elements */}
+          <CustomCursor />
         {!isAdminPage && (
           <>
             <Chatbot onOpenAuth={() => setIsAuthModalOpen(true)} />
@@ -212,32 +214,33 @@ const App: React.FC = () => {
           </>
         )}
         <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
-        
+
         {/* Main Layout */}
         <div className={`transition-opacity duration-1000 ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
-          {/* Header shows everywhere except potentially checkout if desired, but nice to keep navigation */}
-          {!isAdminPage && (
-            <Header 
-              onNavigate={handleNavigate} 
-              currentPage={currentPage} 
-              onOpenAuth={() => setIsAuthModalOpen(true)}
-            />
-          )}
-          
-          <main 
-            className={`relative z-10 min-h-screen transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-              isTransitioning 
-                ? 'opacity-0 translate-y-12 blur-lg scale-[0.98]' 
-                : 'opacity-100 translate-y-0 blur-0 scale-100'
-            }`}
-          >
-            {renderPage()}
-          </main>
-          
-          {!isAdminPage && <Footer onNavigate={handleNavigate} />}
+            {/* Header shows everywhere except potentially checkout if desired, but nice to keep navigation */}
+            {!isAdminPage && (
+              <Header 
+                onNavigate={handleNavigate} 
+                currentPage={currentPage} 
+                onOpenAuth={() => setIsAuthModalOpen(true)}
+              />
+            )}
+            
+            <main 
+              className={`relative z-10 min-h-screen transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                isTransitioning 
+                  ? 'opacity-0 translate-y-12 blur-lg scale-[0.98]' 
+                  : 'opacity-100 translate-y-0 blur-0 scale-100'
+              }`}
+            >
+              {renderPage()}
+            </main>
+            
+            {!isAdminPage && <Footer onNavigate={handleNavigate} />}
+          </div>
         </div>
-      </div>
-    </>
+      </>
+    </CursorProvider>
   );
 };
 

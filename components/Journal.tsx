@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { PageHero } from './PageHero';
 import { ArrowUpRight, ArrowLeft, Calendar, Share2, Clock } from 'lucide-react';
 import { ParallaxBackground } from './ParallaxBackground';
+import { supabase } from '../src/supabaseClient';
 
 // --- Types ---
 interface Article {
@@ -15,12 +16,12 @@ interface Article {
   excerpt: string;
   author?: string;
   readTime?: string;
-  content: React.ReactNode;
+  content: React.ReactNode | string;
   isFeatured?: boolean;
 }
 
-// --- Mock Content Data ---
-const allArticles: Article[] = [
+// --- Mock Content Data (Fallback) ---
+const mockArticles: Article[] = [
   {
     id: 'featured-1',
     title: 'The Art of Slow Luxury',
@@ -55,119 +56,6 @@ const allArticles: Article[] = [
         </p>
         <p className="mt-6">
           It forces us to ask: What are we rushing towards? If the end product is meant to last a lifetime, surely its creation deserves more than a fleeting moment. At AETERNA, we are re-committing ourselves to this slow rhythm. Every stitch, every setting, every drop is a testament to patience.
-        </p>
-      </>
-    )
-  },
-  {
-    id: 's1',
-    title: 'Paris Design Week Highlights',
-    date: 'Oct 08, 2025',
-    category: 'Events',
-    imageUrl: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=600&auto=format&fit=crop',
-    excerpt: 'A curated look at the installations that defined this year’s showcase of avant-garde aesthetics.',
-    author: 'Marc Dubois',
-    readTime: '4 min read',
-    content: (
-      <>
-        <p>
-          Paris was alight this week, not just with its usual city glow, but with the fervent energy of creation. Design Week 2025 brought together the old guard and the new disruptors in a collision of marble, light, and sustainable synthetics.
-        </p>
-        <p className="mt-6">
-          The standout theme was "Ethereal Materiality"—objects that seem to defy gravity or disappear into their surroundings. We were particularly taken by the installation at the Grand Palais, where floating glass structures refracted light into spectrums of impossible color.
-        </p>
-        <blockquote className="font-script italic text-3xl text-luxury border-l-2 border-luxury pl-8 my-12 leading-tight">
-          "Design is not just about form. It is about the space between the forms."
-        </blockquote>
-        <p className="mt-6">
-          AETERNA's own pop-up gallery in Le Marais drew crowds eager to see our new "Void" collection, displayed on plinths of raw obsidian. It was a reminder that in a city of history, the future is always being written.
-        </p>
-      </>
-    )
-  },
-  {
-    id: 's2',
-    title: 'The Scent of Gold',
-    date: 'Sep 28, 2025',
-    category: 'Fragrance',
-    imageUrl: 'https://images.unsplash.com/photo-1618331835717-801e976710b2?q=80&w=600&auto=format&fit=crop',
-    excerpt: 'Translating the visual luster of precious metal into an olfactory experience.',
-    author: 'Elena Fisher',
-    readTime: '5 min read',
-    content: (
-      <>
-        <p>
-          How does one bottle a metal? Gold has no smell. It is inert, eternal, cold to the touch yet warm to the eye. This was the paradox facing our master perfumer, Jean-Claude Ellena, when tasked with creating "Aurum."
-        </p>
-        <p className="mt-6">
-          "I did not want to smell the metal," he explains. "I wanted to smell the light it reflects." The result is a composition of saffron, ambergris, and a solar accord of jasmine that feels physically warm on the skin.
-        </p>
-        <div className="grid grid-cols-2 gap-6 my-12">
-           <img src="https://images.unsplash.com/photo-1595425970377-c9703cf48b6d?q=80&w=600&auto=format&fit=crop" className="rounded-lg" alt="Perfume Bottle" />
-           <img src="https://images.unsplash.com/photo-1615634260167-c8cdede054de?q=80&w=600&auto=format&fit=crop" className="rounded-lg" alt="Amber Texture" />
-        </div>
-        <p className="mt-6">
-          It is a scent for the evening, for the moment the sun dips below the horizon and the world turns golden. It is luxury, distilled into air.
-        </p>
-      </>
-    )
-  },
-  {
-    id: 's3',
-    title: 'Interview with the Founder',
-    date: 'Sep 15, 2025',
-    category: 'Maison',
-    imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=600&auto=format&fit=crop',
-    excerpt: 'A rare conversation about the origins of AETERNA and the future of independent luxury.',
-    author: 'AETERNA Editorial',
-    readTime: '10 min read',
-    content: (
-      <>
-        <p>
-          He is a man who prefers the shadows to the spotlight. But today, the founder of AETERNA sits in a high-backed leather chair, overlooking the rainy streets of London, ready to speak.
-        </p>
-        <p className="mt-6">
-          <strong>Editorial:</strong> Why start a luxury brand now? The market seems saturated.
-        </p>
-        <p className="mt-4">
-          <strong>Founder:</strong> That is exactly why. The market is saturated with "stuff." Logos. Noise. Fast fashion masquerading as prestige. I wanted to build a sanctuary. AETERNA is not for everyone. It is for those who know.
-        </p>
-        <p className="mt-6">
-          <strong>Editorial:</strong> You define the brand as "Timeless." Is that possible in 2025?
-        </p>
-        <p className="mt-4">
-          <strong>Founder:</strong> Timelessness is not about being old. It is about being outside of time. A Greek statue is timeless. A perfect white shirt is timeless. We aim for that—objects that do not age, they only mature.
-        </p>
-      </>
-    )
-  },
-  {
-    id: 'a1',
-    title: 'The Midnight Collection Launch',
-    date: 'August 2024',
-    category: 'Events',
-    imageUrl: 'https://images.unsplash.com/photo-1569388330292-79cc1ec67270?q=80&w=1000&auto=format&fit=crop',
-    excerpt: 'An evening of shadows and light as we unveiled our most ambitious timepieces to date.',
-    author: 'AETERNA Editorial',
-    readTime: '3 min read',
-    content: <p>Full coverage of the Midnight Collection launch event coming soon from the archives.</p>
-  },
-  {
-    id: 'a2',
-    title: 'Sourcing the Rarest Diamonds',
-    date: 'July 2024',
-    category: 'Craftsmanship',
-    imageUrl: 'https://images.unsplash.com/photo-1600607686527-6fb886090705?q=80&w=1000&auto=format&fit=crop',
-    excerpt: 'A journey into the deep earth to find stones that speak the language of eternity.',
-    author: 'Geoffrey Stone',
-    readTime: '7 min read',
-    content: (
-      <>
-        <p>
-          To find a diamond that meets the AETERNA standard is to search for a needle in a thousand haystacks. Our gemologists travel to the most remote corners of the earth—from the icy mines of Canada to the riverbeds of Sierra Leone.
-        </p>
-        <p className="mt-6">
-          It is not just about the 4Cs (Cut, Color, Clarity, Carat). It is about the fire within the stone. Does it speak? Does it hold the light? Only 0.01% of the world's diamonds are deemed worthy of our settings.
         </p>
       </>
     )
@@ -254,7 +142,11 @@ const JournalArticleModal: React.FC<{ article: Article; onClose: () => void }> =
 
                 {/* Text */}
                 <div className="font-body text-offwhite/80 text-lg leading-relaxed space-y-6 [&_strong]:text-white [&_strong]:font-bold">
-                    {article.content}
+                    {typeof article.content === 'string' ? (
+                        <div dangerouslySetInnerHTML={{ __html: article.content }} />
+                    ) : (
+                        article.content
+                    )}
                 </div>
 
                 {/* Footer */}
@@ -278,14 +170,54 @@ const JournalArticleModal: React.FC<{ article: Article; onClose: () => void }> =
 export const Journal: React.FC = () => {
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [filter, setFilter] = useState('All');
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [loading, setLoading] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   
   const categories = ['All', 'Featured', 'Events', 'Fragrance', 'Maison', 'Craftsmanship'];
+
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('journal_posts')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          const mappedArticles = data.map((post: any) => ({
+            id: post.id,
+            title: post.title,
+            subtitle: post.subtitle,
+            date: new Date(post.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+            category: post.category,
+            imageUrl: post.image_url,
+            excerpt: post.excerpt,
+            author: post.author,
+            readTime: post.read_time,
+            content: post.content,
+            isFeatured: post.is_featured
+          }));
+          setArticles(mappedArticles);
+        } else {
+          setArticles(mockArticles);
+        }
+      } catch (error) {
+        console.error('Error fetching journal posts:', error);
+        setArticles(mockArticles);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchArticles();
+  }, []);
   
   const filteredArticles = filter === 'All' 
-    ? allArticles 
-    : allArticles.filter(a => a.category === filter || (filter === 'Featured' && a.isFeatured));
-
+    ? articles 
+    : articles.filter(a => a.category === filter || (filter === 'Featured' && a.isFeatured));
 
   return (
     <div ref={containerRef} className="min-h-screen bg-void animate-fade-in relative z-10">

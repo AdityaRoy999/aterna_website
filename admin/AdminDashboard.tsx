@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../src/supabaseClient';
 import { useAuth } from '../context/AuthContext';
+import { JournalTab } from './JournalTab';
 import { 
   LayoutDashboard, 
   Package, 
@@ -30,6 +31,22 @@ import {
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { 
+  LineChart, 
+  Line, 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer, 
+  PieChart, 
+  Pie, 
+  Cell,
+  AreaChart,
+  Area
+} from 'recharts';
 
 interface AdminDashboardProps {
   onNavigate: (page: string) => void;
@@ -73,7 +90,8 @@ const NotificationsMenu = () => {
     // Subscribe to new notifications
     const subscription = supabase
       .channel('notifications')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, payload => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
+        if (!payload || !payload.new) return;
         setNotifications(prev => [payload.new, ...prev]);
         setUnreadCount(prev => prev + 1);
       })
@@ -518,6 +536,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
             onClick={() => { setActiveTab('orders'); setIsSidebarOpen(false); }} 
           />
           <div className="pt-4 pb-2">
+            <p className="px-3 text-xs font-semibold text-white/20 uppercase tracking-wider">Content</p>
+          </div>
+          <SidebarItem 
+            icon={<FileText size={18} />} 
+            label="Journal" 
+            active={activeTab === 'journal'} 
+            onClick={() => { setActiveTab('journal'); setIsSidebarOpen(false); }} 
+          />
+          <div className="pt-4 pb-2">
             <p className="px-3 text-xs font-semibold text-white/20 uppercase tracking-wider">Communication</p>
           </div>
           <SidebarItem 
@@ -597,6 +624,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
           <div className="max-w-7xl mx-auto">
             {activeTab === 'overview' && <OverviewTab onNavigate={onNavigate} setActiveTab={setActiveTab} />}
             {activeTab === 'products' && <ProductsTab />}
+            {activeTab === 'journal' && <JournalTab />}
             {activeTab === 'orders' && <OrdersTab />}
             {activeTab === 'contact' && <ContactTab />}
             {activeTab === 'appointments' && <AppointmentsTab />}
@@ -630,11 +658,16 @@ const SidebarItem = ({ icon, label, active, onClick }: any) => (
 const OverviewTab = ({ onNavigate, setActiveTab }: any) => {
   const { user } = useAuth();
   const [stats, setStats] = useState({ sales: 0, orders: 0, products: 0 });
+  const [salesData, setSalesData] = useState<any[]>([]);
+  const [topProducts, setTopProducts] = useState<any[]>([]);
+  const [orderStatusData, setOrderStatusData] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchStats = async () => {
-      const { data: orders } = await supabase.from('orders').select('total_amount');
+      // Fetch basic stats
+      const { data: orders } = await supabase.from('orders').select('total_amount, created_at, status');
       const { count: productsCount } = await supabase.from('products').select('*', { count: 'exact', head: true });
+      const { data: orderItems } = await supabase.from('order_items').select('product_name, quantity, price');
       
       const totalSales = orders?.reduce((sum, order) => sum + (Number(order.total_amount) || 0), 0) || 0;
       
@@ -643,9 +676,49 @@ const OverviewTab = ({ onNavigate, setActiveTab }: any) => {
         orders: orders?.length || 0,
         products: productsCount || 0
       });
+
+      // Process Sales Data (Last 7 days or grouped by date)
+      if (orders) {
+        const salesByDate: Record<string, number> = {};
+        orders.forEach(order => {
+          const date = new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          salesByDate[date] = (salesByDate[date] || 0) + (Number(order.total_amount) || 0);
+        });
+        
+        // Sort by date (simple approach, assuming data is relatively recent)
+        const chartData = Object.entries(salesByDate).map(([name, value]) => ({ name, value }));
+        // Limit to last 7 entries if too many
+        setSalesData(chartData.slice(-7));
+
+        // Process Order Status
+        const statusCounts: Record<string, number> = {};
+        orders.forEach(order => {
+          const status = order.status || 'pending';
+          statusCounts[status] = (statusCounts[status] || 0) + 1;
+        });
+        const statusData = Object.entries(statusCounts).map(([name, value]) => ({ name, value }));
+        setOrderStatusData(statusData);
+      }
+
+      // Process Top Products
+      if (orderItems) {
+        const productSales: Record<string, number> = {};
+        orderItems.forEach(item => {
+          productSales[item.product_name] = (productSales[item.product_name] || 0) + (item.quantity || 0);
+        });
+        
+        const topProductsData = Object.entries(productSales)
+          .map(([name, value]) => ({ name, value }))
+          .sort((a, b) => b.value - a.value)
+          .slice(0, 5);
+          
+        setTopProducts(topProductsData);
+      }
     };
     fetchStats();
   }, []);
+
+  const COLORS = ['#D4AF37', '#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -682,6 +755,54 @@ const OverviewTab = ({ onNavigate, setActiveTab }: any) => {
           trendUp={true}
           icon={<Package className="text-purple-400" size={24} />} 
         />
+      </div>
+
+      {/* Analytics Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Sales Chart */}
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6 hover:border-white/20 transition-colors duration-300">
+          <h3 className="text-lg font-display text-white mb-6">Sales Overview</h3>
+          <div className="h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={salesData}>
+                <defs>
+                  <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#D4AF37" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
+                <XAxis dataKey="name" stroke="#ffffff60" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#ffffff60" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '8px' }}
+                  itemStyle={{ color: '#D4AF37' }}
+                />
+                <Area type="monotone" dataKey="value" stroke="#D4AF37" fillOpacity={1} fill="url(#colorSales)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Top Products Chart */}
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6 hover:border-white/20 transition-colors duration-300">
+          <h3 className="text-lg font-display text-white mb-6">Top Products</h3>
+          <div className="h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={topProducts} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" horizontal={false} />
+                <XAxis type="number" stroke="#ffffff60" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis dataKey="name" type="category" width={100} stroke="#ffffff60" fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip 
+                  cursor={{ fill: '#ffffff05' }}
+                  contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '8px' }}
+                  itemStyle={{ color: '#fff' }}
+                />
+                <Bar dataKey="value" fill="#D4AF37" radius={[0, 4, 4, 0]} barSize={20} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -1093,9 +1214,20 @@ const ProductModal = ({ product, onClose, onSave }: any) => {
 
     if (product) {
       // Update existing product
-      await supabase.from('products').update(dataToSave).eq('id', product.id);
+      const { error } = await supabase.from('products').update(dataToSave).eq('id', product.id);
+      if (error) {
+        console.error('Error updating product:', error);
+        alert('Failed to update product: ' + error.message);
+        return;
+      }
     } else {
-      await supabase.from('products').insert([dataToSave]);
+      // Insert new product - Let DB generate ID
+      const { error } = await supabase.from('products').insert([dataToSave]);
+      if (error) {
+        console.error('Error adding product:', error);
+        alert('Failed to add product: ' + error.message);
+        return;
+      }
     }
     onSave();
   };
@@ -1301,6 +1433,7 @@ const ProductModal = ({ product, onClose, onSave }: any) => {
 const StatusDropdown = ({ status, onUpdate }: { status: string, onUpdate: (val: string) => void }) => {
   const [isOpen, setIsOpen] = useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
+  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -1308,9 +1441,31 @@ const StatusDropdown = ({ status, onUpdate }: { status: string, onUpdate: (val: 
         setIsOpen(false);
       }
     };
+    
+    const handleScroll = () => {
+      if (isOpen) setIsOpen(false);
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    window.addEventListener('scroll', handleScroll, true);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll, true);
+    };
+  }, [isOpen]);
+
+  const toggleDropdown = () => {
+    if (!isOpen && ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      setCoords({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width
+      });
+    }
+    setIsOpen(!isOpen);
+  };
 
   const options = [
     { value: 'processing', label: 'Processing' },
@@ -1326,7 +1481,7 @@ const StatusDropdown = ({ status, onUpdate }: { status: string, onUpdate: (val: 
   return (
     <div className="relative min-w-[160px]" ref={ref}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleDropdown}
         className={`w-full bg-black/20 border border-white/10 rounded px-3 py-2 text-xs font-medium uppercase flex justify-between items-center transition-all duration-300 hover:border-white/30 ${getStatusColor(status)}`}
       >
         <span>{currentLabel}</span>
@@ -1334,7 +1489,14 @@ const StatusDropdown = ({ status, onUpdate }: { status: string, onUpdate: (val: 
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-[#1a1a1a] border border-white/10 rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div 
+          className="fixed z-[9999] bg-[#1a1a1a] border border-white/10 rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+          style={{ 
+            top: `${coords.top + 4}px`, 
+            left: `${coords.left}px`, 
+            width: `${coords.width}px` 
+          }}
+        >
           {options.map((opt) => (
             <button
               key={opt.value}

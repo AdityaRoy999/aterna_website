@@ -25,20 +25,8 @@ export const OrderTracking: React.FC<OrderTrackingProps> = ({ initialOrderId }) 
   const [orderData, setOrderData] = useState<any>(null);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // If initialOrderId is present, simulate auto-search
-  useEffect(() => {
-    if (initialOrderId) {
-      setOrderId(initialOrderId);
-      // Trigger search automatically if we had a way to call handleSearch without event, 
-      // but for now user can just click search or we can refactor.
-      // Let's just set viewState to input with the ID pre-filled.
-      setViewState('input');
-    }
-  }, [initialOrderId]);
-
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!orderId) return;
+  const performSearch = async (searchId: string) => {
+    if (!searchId) return;
     setViewState('searching');
     setErrorMessage('');
     setOrderData(null);
@@ -47,20 +35,16 @@ export const OrderTracking: React.FC<OrderTrackingProps> = ({ initialOrderId }) 
       const { data, error } = await supabase
         .from('orders')
         .select('*')
-        .eq('id', orderId.trim())
+        .eq('id', searchId.trim())
         .single();
 
       if (error) throw error;
 
       if (data) {
         // Optional: Verify email if entered
-        // Check if data.email exists before calling toLowerCase
         if (email && data.email && data.email.toLowerCase() !== email.toLowerCase()) {
            throw new Error("Email does not match order records.");
         }
-        // If order has no email (legacy), we might want to allow or block. 
-        // For now, if user entered email but order has none, maybe we should warn?
-        // But to fix the crash, the above check is sufficient.
         
         setOrderData(data);
         setViewState('result');
@@ -72,6 +56,19 @@ export const OrderTracking: React.FC<OrderTrackingProps> = ({ initialOrderId }) 
       setErrorMessage(error.message || "Order not found. Please check your details.");
       setViewState('error');
     }
+  };
+
+  // If initialOrderId is present, simulate auto-search
+  useEffect(() => {
+    if (initialOrderId) {
+      setOrderId(initialOrderId);
+      performSearch(initialOrderId);
+    }
+  }, [initialOrderId]);
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    performSearch(orderId);
   };
 
   // Helper to determine step status based on DB status
