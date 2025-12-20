@@ -94,6 +94,18 @@ const NotificationsMenu = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Lock body scroll when menu is open (mainly for mobile)
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
   const fetchNotifications = async () => {
     const { data } = await supabase
       .from('notifications')
@@ -124,54 +136,81 @@ const NotificationsMenu = () => {
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className="p-2 text-white/40 hover:text-luxury hover:bg-white/5 rounded-full relative transition-colors"
+        aria-haspopup="true"
+        aria-expanded={isOpen}
+        aria-controls="notifications-panel"
       >
         <Bell size={20} />
         {unreadCount > 0 && (
-          <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+          <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" aria-hidden="true"></span>
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-[#1a1a1a] border border-white/10 rounded-lg shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200">
-          <div className="p-3 border-b border-white/10 flex justify-between items-center">
-            <h3 className="text-sm font-semibold text-white">Notifications</h3>
-            {unreadCount > 0 && (
-              <button onClick={markAllAsRead} className="text-xs text-luxury hover:text-white transition-colors">
-                Mark all read
-              </button>
-            )}
-          </div>
-          <div className="max-h-96 overflow-y-auto">
-            {notifications.length === 0 ? (
-              <div className="p-8 text-center text-white/40 text-sm">
-                No notifications
+        <>
+          {/* Mobile Backdrop */}
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 sm:hidden" onClick={() => setIsOpen(false)} aria-hidden="true" />
+          
+          {/* Notification Panel */}
+          <div 
+            id="notifications-panel" 
+            role="dialog" 
+            aria-label="Notifications" 
+            className="fixed left-4 right-4 top-20 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80 bg-[#1a1a1a] border border-white/10 rounded-lg shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[80vh] sm:max-h-auto"
+          >
+            <div className="p-3 border-b border-white/10 flex justify-between items-center shrink-0">
+              <h3 className="text-sm font-semibold text-white">Notifications</h3>
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <button onClick={markAllAsRead} className="hidden sm:inline text-xs text-luxury hover:text-white transition-colors">
+                    Mark all read
+                  </button>
+                )}
+                <button onClick={() => setIsOpen(false)} className="p-1 text-white/40 hover:text-white rounded visible sm:hidden" aria-label="Close notifications">
+                  <X size={16} />
+                </button>
               </div>
-            ) : (
-              notifications.map(notification => (
-                <div 
-                  key={notification.id}
-                  onClick={() => markAsRead(notification.id)}
-                  className={`p-4 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer ${!notification.is_read ? 'bg-white/[0.02]' : ''}`}
-                >
-                  <div className="flex gap-3">
-                    <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${!notification.is_read ? 'bg-luxury' : 'bg-transparent'}`} />
-                    <div>
-                      <p className={`text-sm mb-1 ${!notification.is_read ? 'text-white font-medium' : 'text-white/60'}`}>
-                        {notification.title}
-                      </p>
-                      <p className="text-xs text-white/40 mb-2 line-clamp-2">
-                        {notification.message}
-                      </p>
-                      <p className="text-[10px] text-white/20 uppercase tracking-wider">
-                        {new Date(notification.created_at).toLocaleDateString()} • {new Date(notification.created_at).toLocaleTimeString()}
-                      </p>
+            </div>
+            
+            <div className="overflow-y-auto custom-scrollbar">
+              {notifications.length === 0 ? (
+                <div className="p-6 text-center text-white/40 text-sm">
+                  No notifications
+                </div>
+              ) : (
+                notifications.map(notification => (
+                  <div 
+                    key={notification.id}
+                    onClick={() => { markAsRead(notification.id); if (window.innerWidth < 640) setIsOpen(false); }}
+                    className={`p-4 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer ${!notification.is_read ? 'bg-white/[0.02]' : ''}`}
+                  >
+                    <div className="flex gap-3">
+                      <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${!notification.is_read ? 'bg-luxury' : 'bg-transparent'}`} />
+                      <div>
+                        <p className={`text-sm mb-1 ${!notification.is_read ? 'text-white font-medium' : 'text-white/60'}`}>
+                          {notification.title}
+                        </p>
+                        <p className="text-xs text-white/40 mb-2 line-clamp-2">
+                          {notification.message}
+                        </p>
+                        <p className="text-[10px] text-white/20 uppercase tracking-wider">
+                          {new Date(notification.created_at).toLocaleDateString()} • {new Date(notification.created_at).toLocaleTimeString()}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
+            
+            {/* Mobile Footer */}
+            <div className="sm:hidden p-3 border-t border-white/10 shrink-0">
+              {unreadCount > 0 && (
+                <button onClick={markAllAsRead} className="w-full py-2 bg-luxury text-void rounded text-sm font-medium">Mark all read</button>
+              )}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
@@ -326,22 +365,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
     }
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      localStorage.setItem('redirect_to_admin', 'true');
-      // Use query param for more robust redirect handling across environments
-      const redirectTo = `${window.location.origin}/?page=admin`;
-      
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo }
-      });
-      if (error) throw error;
-    } catch (err: any) {
-      setAuthError(err.message);
-    }
-  };
-
   if (loading) return <div className="min-h-screen bg-void flex items-center justify-center text-white/60 font-body">Loading system...</div>;
 
   if (!user) {
@@ -408,28 +431,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                 {authLoading ? 'Authenticating...' : 'Sign In'}
               </button>
             </form>
-
-            <div className="relative my-8">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/10"></div>
-              </div>
-              <div className="relative flex justify-center text-xs uppercase tracking-wider font-body">
-                <span className="bg-[#0a0a0a] px-3 text-white/40">Or continue with</span>
-              </div>
-            </div>
-
-            <button 
-              onClick={handleGoogleLogin}
-              className="w-full bg-white text-void hover:bg-white/90 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-3 shadow-sm font-body tracking-wide"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-              </svg>
-              Sign in with Google
-            </button>
           </div>
           
           <div className="text-center mt-8 text-white/20 text-xs font-body tracking-widest">
