@@ -97,7 +97,10 @@ const JournalArticleModal: React.FC<{ article: Article; onClose: () => void }> =
         </div>
 
         {/* Scrollable Content */}
-        <div className="absolute inset-0 overflow-y-auto custom-scrollbar">
+        <div 
+            className="absolute inset-0 overflow-y-auto custom-scrollbar overscroll-contain"
+            data-lenis-prevent="true"
+        >
             {/* Article Hero */}
             <div className="w-full h-[60vh] relative shrink-0">
                 <img src={article.imageUrl} alt={article.title} className="w-full h-full object-cover" />

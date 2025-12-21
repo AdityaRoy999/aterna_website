@@ -3,7 +3,8 @@ import { MessageSquare, Send, Sparkles, CreditCard, CheckCircle, ShoppingBag, Tr
 import { X } from '@/components/ui/icons/x';
 import { GoogleGenAI, Chat } from "@google/genai";
 import emailjs from '@emailjs/browser';
-import Lenis from 'lenis';
+
+
 import { useBookmarks } from '../context/BookmarkContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../src/supabaseClient';
@@ -116,45 +117,12 @@ export const Chatbot: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) =>
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const lenisRef = useRef<Lenis | null>(null);
   const chatSessionRef = useRef<Chat | null>(null);
   const { bookmarkedIds } = useBookmarks();
   const { user } = useAuth();
   const [userProfile, setUserProfile] = useState<any>(null);
   const [dynamicCatalog, setDynamicCatalog] = useState<string>('');
   const [products, setProducts] = useState<any[]>([]);
-
-  // Initialize Lenis for Chatbot
-  useEffect(() => {
-    if (isOpen && chatContainerRef.current) {
-      const lenis = new Lenis({
-        wrapper: chatContainerRef.current,
-        duration: 1.2,
-        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-        gestureDirection: 'vertical',
-        smooth: true,
-        mouseMultiplier: 1,
-        smoothTouch: false,
-        touchMultiplier: 2,
-      });
-
-      lenisRef.current = lenis;
-
-      function raf(time: number) {
-        lenis.raf(time);
-        requestAnimationFrame(raf);
-      }
-
-      requestAnimationFrame(raf);
-
-      return () => {
-        lenis.destroy();
-        lenisRef.current = null;
-      };
-    }
-  }, [isOpen]);
-
-  // Fetch user profile when user logs in
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user) {
@@ -258,49 +226,161 @@ export const Chatbot: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) =>
     initChat();
   };
 
+  const loadRazorpay = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
   const handlePayment = async (details: NonNullable<Message['paymentDetails']>) => {
     setIsTyping(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // Send Email Receipt
     try {
-      const emailParams = {
-        order_id: `ORD-${Date.now()}`,
-        to_name: `${details.customerDetails.firstName} ${details.customerDetails.lastName}`,
-        to_email: details.customerDetails.email,
-        total_amount: details.price.toLocaleString(),
-        order_date: new Date().toLocaleDateString(),
-        tracking_link: '#',
-        cart_items_html: `
-          <tr>
-            <td style="padding: 12px; border-bottom: 1px solid #333; color: #e0e0e0;">${details.product}</td>
-            <td style="padding: 12px; border-bottom: 1px solid #333; color: #e0e0e0;">1</td>
-            <td style="padding: 12px; border-bottom: 1px solid #333; color: #d4af37;">$${details.price.toLocaleString()}</td>
-          </tr>
-        `
+      const res = await loadRazorpay();
+      if (!res) {
+        setIsTyping(false);
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          text: "I apologize, but I am unable to connect to the secure payment gateway at this time. Please try again later or visit our main shop.",
+          sender: 'ai',
+          type: 'text'
+        }]);
+        return;
+      }
+
+      // 1. Create Order in Supabase
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .insert([
+          {
+            user_id: user?.id,
+            email: details.customerDetails.email,
+            total_amount: details.price,
+            status: 'pending',
+            shipping_address: {
+              line1: details.customerDetails.address,
+              city: details.customerDetails.city,
+              zip: details.customerDetails.zip,
+              country: details.customerDetails.country,
+              name: `${details.customerDetails.firstName} ${details.customerDetails.lastName}`
+            }
+          }
+        ])
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+      const newOrderId = orderData.id;
+
+      // 2. Initialize Razorpay
+      // Assuming price is in dollars, convert to cents/paise appropriately or use currency. 
+      // For this demo, let's assume if currency is USD, we multiply by 100.
+      const amount = details.currency === 'INR' ? Math.round(details.price * 100) : Math.round(details.price * 100); 
+
+      const options = {
+        key: "rzp_test_RsduSHftu7RxTq", // Test Key ID
+        amount: amount, 
+        currency: details.currency,
+        name: "AETERNA",
+        description: `Order #${newOrderId}`,
+        order_id: "", // In production, generate order_id on backend
+        handler: async function (response: any) {
+          try {
+             // 3. Payment Success - Update Order
+             await supabase
+               .from('orders')
+               .update({ status: 'processing', payment_id: response.razorpay_payment_id })
+               .eq('id', newOrderId);
+
+             // 4. Update Stock
+             // We need to find the product ID from the name. This is a bit tricky with nuances, logic tries to be robust.
+             // Best effort search by name.
+             const productObj = products.find(p => p.name === details.product.replace(/\s*\(.*?\)\s*$/, ''));
+             if (productObj) {
+                const { error: stockError } = await supabase.rpc('decrement_stock', {
+                  product_id: productObj.id,
+                  quantity_to_decrement: 1
+                });
+                if (stockError) console.error("Stock update failed", stockError);
+             }
+
+             // 5. Send Email Receipt
+             const emailParams = {
+                order_id: newOrderId,
+                to_name: `${details.customerDetails.firstName} ${details.customerDetails.lastName}`,
+                to_email: details.customerDetails.email,
+                total_amount: details.price.toLocaleString(),
+                order_date: new Date().toLocaleDateString(),
+                tracking_link: `${window.location.origin}?page=tracking&id=${newOrderId}`,
+                cart_items_html: `
+                  <tr>
+                    <td style="padding: 12px; border-bottom: 1px solid #333; color: #e0e0e0;">${details.product}</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #333; color: #e0e0e0;">1</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #333; color: #d4af37;">$${details.price.toLocaleString()}</td>
+                  </tr>
+                `
+             };
+
+             await emailjs.send(
+                import.meta.env.VITE_EMAILJS_SERVICE_ID,
+                import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+                emailParams,
+                import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+             );
+
+             // 6. Success Message
+             const successMsg: Message = {
+                id: Date.now().toString(),
+                text: `Payment received. Your order #${newOrderId.slice(0,8)} has been confirmed and a receipt sent to your email. I will personally oversee its dispatch.`,
+                sender: 'ai',
+                type: 'payment_success'
+             };
+             setMessages(prev => [...prev, successMsg]);
+
+          } catch (err) {
+             console.error("Post-payment processing failed", err);
+             // Verify manual check needed
+             setMessages(prev => [...prev, {
+                id: Date.now().toString(),
+                text: "Your payment was successful, but I encountered a slight delay in confirming the details. Please check your email for the receipt.",
+                sender: 'ai',
+                type: 'text'
+             }]);
+          }
+          setIsTyping(false);
+        },
+        prefill: {
+          name: `${details.customerDetails.firstName} ${details.customerDetails.lastName}`,
+          email: details.customerDetails.email,
+          contact: ""
+        },
+        theme: {
+          color: "#E8CFA0"
+        },
+        modal: {
+          ondismiss: function() {
+            setIsTyping(false);
+          }
+        }
       };
 
-      await emailjs.send(
-        import.meta.env.VITE_EMAILJS_SERVICE_ID,
-        import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
-        emailParams,
-        import.meta.env.VITE_EMAILJS_PUBLIC_KEY
-      );
+      const paymentObject = new (window as any).Razorpay(options);
+      paymentObject.open();
+
     } catch (error) {
-      console.error("Failed to send receipt email", error);
+      console.error("Payment initiation failed", error);
+      setIsTyping(false);
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        text: "I apologize, but I could not initiate the transaction securely. Please try again.",
+        sender: 'ai',
+        type: 'text'
+      }]);
     }
-    
-    setIsTyping(false);
-    
-    const successMsg: Message = {
-      id: Date.now().toString(),
-      text: `Payment of $${details.price.toLocaleString()} received. Your order for the ${details.product} has been confirmed. A receipt has been sent to ${details.customerDetails.email}.`,
-      sender: 'ai',
-      type: 'payment_success'
-    };
-    setMessages(prev => [...prev, successMsg]);
   };
 
   const handleSend = async () => {
@@ -518,7 +598,8 @@ User Profile Details (Use these if user confirms):
         {/* Messages - Reduced Height */}
         <div 
           ref={chatContainerRef}
-          className="h-[300px] overflow-y-auto p-4 space-y-4 custom-scrollbar bg-gradient-to-b from-[#050505] to-stone-950/50"
+          data-lenis-prevent="true"
+          className="h-[300px] overflow-y-auto overscroll-contain p-4 space-y-4 custom-scrollbar bg-gradient-to-b from-[#050505] to-stone-950/50"
         >
           {messages.map((msg) => (
             <div 

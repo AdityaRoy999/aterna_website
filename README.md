@@ -251,21 +251,6 @@ graph TD
     I --& Auth Modal;
 ```
 
-## Roadmap
-
-The AETERNA project is continuously evolving. Here are some potential future enhancements:
-
-*   **Advanced Search & Filtering**: Implement more sophisticated product search and filtering options.
-*   **Customer Reviews & Ratings**: Allow users to leave reviews and ratings for products.
-*   **Loyalty Program**: Introduce a customer loyalty or rewards program.
-*   **Multi-language Support**: Add internationalization (i18n) for multiple languages.
-*   **Customizable Product Options**: Allow customers to configure certain product aspects before purchase.
-*   **AI-driven Recommendations**: Integrate more AI to provide personalized product recommendations.
-*   **Enhanced Admin Analytics**: More detailed dashboards and reporting tools for sales, inventory, and user behavior.
-*   **Mobile App**: Develop native mobile applications for iOS and Android.
-*   **Marketing Integrations**: Connect with email marketing platforms and analytics tools.
-*   **Wishlist Notifications**: Notify users when wishlisted items are back in stock or on sale.
-
 ## Optimizations
 
 The project incorporates several performance optimizations:

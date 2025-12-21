@@ -29,4 +29,5 @@ export interface NavLink {
 export interface CartItem extends Product {
   quantity: number;
   selectedColor?: string;
+  productId?: string;
 }

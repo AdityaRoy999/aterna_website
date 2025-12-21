@@ -110,38 +110,53 @@ export const Checkout: React.FC<CheckoutProps> = ({ onNavigate }) => {
       const newOrderId = orderData.id;
       setOrderId(newOrderId);
 
-      // 2. Create Order Items
-      const orderItems = items.map(item => {
-        // Fix: Handle UUIDs correctly. 
-        // CartItem.id is constructed as `${product_id}-${variant_name}` in CartContext.
-        // Since UUIDs contain hyphens, we can't just split by '-'.
-        // However, we know the variant name is at the end.
-        // But wait, CartContext says: id: `${item.product_id}-${item.variant_name}`
-        // If product_id is a UUID (e.g. 123-456-789), and variant is "Gold", id is "123-456-789-Gold".
-        // Splitting by '-' gives ["123", "456", "789", "Gold"].
-        // We need to reconstruct the UUID.
-        
-        // Better approach: We know the variant name is stored in item.selectedColor.
-        // So we can just strip the variant name from the end if it exists.
-        
-        let productId = item.id;
-        if (item.selectedColor && item.id.endsWith(`-${item.selectedColor}`)) {
-           productId = item.id.slice(0, -(item.selectedColor.length + 1));
-        } else if (item.id.split('-').length > 5) {
-           // Fallback: If it looks like UUID-Variant (more than 4 hyphens), try to guess.
-           // A UUID has 36 chars.
-           productId = item.id.substring(0, 36);
-        }
+      // 1.5 Validate and Fix Product IDs (Handle Legacy Cart Items)
+      const validItems = await Promise.all(items.map(async (item) => {
+        let resolvedId = item.productId;
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-        return {
+        // If ID is missing or invalid, try to resolve it from the DB by name
+        if (!resolvedId || !uuidRegex.test(resolvedId)) {
+           // Try to extract from string first
+           if (item.selectedColor && item.id.endsWith(`-${item.selectedColor}`)) {
+               const potentialId = item.id.slice(0, -(item.selectedColor.length + 1));
+               if (uuidRegex.test(potentialId)) {
+                   resolvedId = potentialId;
+               }
+           }
+           
+           // If still invalid, fetch from DB by name
+           if (!resolvedId || !uuidRegex.test(resolvedId)) {
+             try {
+                // Remove variant suffix from name if present (e.g. "Watch (Gold)")
+                const cleanName = item.name.replace(/\s*\(.*?\)\s*$/, '');  
+                const { data } = await supabase
+                  .from('products')
+                  .select('id')
+                  .eq('name', cleanName)
+                  .single();
+                
+                if (data) {
+                  resolvedId = data.id;
+                }
+             } catch (e) {
+               console.warn("Failed to resolve product ID for", item.name);
+             }
+           }
+        }
+        
+        return { ...item, resolvedId: resolvedId || item.id }; // Fallback to item.id if all else fails
+      }));
+
+      // 2. Create Order Items
+      const orderItems = validItems.map(item => ({
           order_id: newOrderId,
-          product_id: productId,
+          product_id: item.resolvedId, // Use resolved ID
           product_name: item.name,
           quantity: item.quantity,
           price: item.price,
           variant_name: item.selectedColor
-        };
-      });
+      }));
 
       const { error: itemsError } = await supabase
         .from('order_items')
@@ -171,22 +186,55 @@ export const Checkout: React.FC<CheckoutProps> = ({ onNavigate }) => {
             .eq('id', newOrderId);
 
           // Update Stock and Check for Low Stock
-          for (const item of items) {
-            let productId = item.id;
-            if (item.selectedColor && item.id.endsWith(`-${item.selectedColor}`)) {
-               productId = item.id.slice(0, -(item.selectedColor.length + 1));
-            } else if (item.id.split('-').length > 5) {
-               productId = item.id.substring(0, 36);
+          // Use validItems which has the correctly resolved UUIDs
+          for (const item of validItems) {
+             let productId = item.resolvedId;
+
+             // 1.5. Validate ID format (Loose check)
+             // We now allow non-UUIDs because we updated the backend to handle text IDs (legacy support)
+             if (!productId) {
+                 if (item.selectedColor && item.id.endsWith(`-${item.selectedColor}`)) {
+                     const potentialId = item.id.slice(0, -(item.selectedColor.length + 1));
+                     if (potentialId) productId = potentialId;
+                 }
+                 
+                 // DB Lookup fallback
+                 if (!productId) {
+                    const cleanName = item.name.replace(/\s*\(.*?\)\s*$/, '');
+                    const { data } = await supabase.from('products').select('id').eq('name', cleanName).single();
+                    if (data) productId = data.id;
+                 }
+             }
+            
+            if (!productId) {
+                console.error("Skipping stock update: No Product ID could be resolved for", item.name);
+                continue;
             }
 
-            const { error: stockError } = await supabase.rpc('decrement_stock', {
-              product_id: productId,
+            // Try updating by ID first
+            let { error: stockError } = await supabase.rpc('decrement_stock', {
+              product_id: productId.toString(), // Ensure string
               quantity_to_decrement: item.quantity
             });
+
             if (stockError) {
-              console.error('Error updating stock for', item.name, stockError);
+              console.warn(`Stock update by ID failed for ${item.name}, trying by name...`, stockError);
+              
+              // Fallback: Try updating by Name
+              const cleanName = item.name.replace(/\s*\(.*?\)\s*$/, '');
+              const { error: nameStockError } = await supabase.rpc('decrement_stock_by_name', {
+                 p_name: cleanName,
+                 q_decrement: item.quantity
+              });
+              
+              if (nameStockError) {
+                 console.error(`CRITICAL: Stock update failed by BOTH ID and Name for ${item.name}`, nameStockError);
+                 // Optional: Fire an admin alert here about data inconsistency
+              } else {
+                 console.log(`Stock updated by name for ${item.name}`);
+              }
             } else {
-              // Check remaining stock
+              // Check remaining stock logic ...
               const { data: productData } = await supabase
                 .from('products')
                 .select('quantity, name')
@@ -194,8 +242,8 @@ export const Checkout: React.FC<CheckoutProps> = ({ onNavigate }) => {
                 .single();
               
               if (productData && productData.quantity <= 3) {
-                // Don't await admin alerts to prevent blocking checkout
-                sendAdminAlert(
+                 // ... alert logic
+                 sendAdminAlert(
                   'stock',
                   'Low Stock Alert',
                   `Product "${productData.name}" is running low. Only ${productData.quantity} remaining.`,

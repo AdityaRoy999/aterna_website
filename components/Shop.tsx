@@ -154,7 +154,21 @@ const QuickViewModal: React.FC<{ product: Product; onClose: () => void }> = ({ p
                        ))}
                      </div>
                    </div>
-                 )}
+                   
+                  )}
+                   
+                   {/* Stock Status for Modal */}
+                   {product.quantity !== undefined && product.quantity <= 10 && product.quantity > 0 && (
+                     <p className={`text-xs font-bold uppercase tracking-wider mb-4 ${product.quantity === 1 ? 'text-red-500' : 'text-orange-500'}`}>
+                       {product.quantity === 1 ? 'Only 1 item left in stock' : `Only few pieces left (${product.quantity})`}
+                     </p>
+                   )}
+                   {product.quantity === 0 && (
+                      <p className="text-xs font-bold uppercase tracking-wider mb-4 text-red-500">
+                        Out of Stock
+                      </p>
+                   )}
+                   
               </div>
 
               {/* Actions */}
@@ -451,40 +465,59 @@ export const Shop: React.FC<ShopProps> = ({ initialProductId }) => {
                   <ParallaxBackground 
                     src={product.imageUrl} 
                     alt={product.name}
-                    className="transition-transform duration-700 group-hover:scale-110 opacity-90 group-hover:opacity-100 cursor-pointer"
-                    onClick={() => setSelectedProduct(product)}
+                    className={`transition-transform duration-700 group-hover:scale-110 opacity-90 group-hover:opacity-100 cursor-pointer ${product.quantity === 0 ? 'grayscale' : ''}`}
+                    onClick={() => product.quantity !== 0 && setSelectedProduct(product)}
                   />
                   
-                  {product.isNew && (
+                  {product.isNew && product.quantity !== 0 && (
                     <div className="absolute top-4 left-4 px-3 py-1 bg-luxury text-void font-ui text-[10px] font-bold uppercase tracking-wider rounded-full pointer-events-none z-10">
                       New
                     </div>
                   )}
 
+                  {product.quantity === 0 && (
+                     <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-10 pointer-events-none">
+                        <span className="font-display text-xl text-white uppercase tracking-widest border-2 border-white px-6 py-2">Out of Stock</span>
+                     </div>
+                  )}
+
+                  {/* Stock Warnings for Grid */}
+                  {product.quantity !== undefined && product.quantity > 0 && product.quantity <= 10 && (
+                    <div className="absolute bottom-4 left-4 right-4 z-10">
+                       <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-sm ${product.quantity === 1 ? 'bg-red-500 text-white' : 'bg-orange-500 text-white'}`}>
+                          {product.quantity === 1 ? 'Only 1 item left' : 'Few pieces left'}
+                       </span>
+                    </div>
+                  )}
+
                   {/* Quick View Button */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/20 pointer-events-none z-10">
-                     <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedProduct(product);
-                        }}
-                        className="pointer-events-auto bg-white/10 backdrop-blur-md text-white font-ui text-xs uppercase tracking-widest px-6 py-3 rounded-full border border-white/20 hover:bg-luxury hover:text-void hover:border-luxury transition-all transform translate-y-4 group-hover:translate-y-0 duration-200 ease-out shadow-xl" 
-                        data-hover="true"
-                     >
-                       Quick View
-                     </button>
-                  </div>
+                  {product.quantity !== 0 && (
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/20 pointer-events-none z-10">
+                       <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedProduct(product);
+                          }}
+                          className="pointer-events-auto bg-white/10 backdrop-blur-md text-white font-ui text-xs uppercase tracking-widest px-6 py-3 rounded-full border border-white/20 hover:bg-luxury hover:text-void hover:border-luxury transition-all transform translate-y-4 group-hover:translate-y-0 duration-200 ease-out shadow-xl" 
+                          data-hover="true"
+                       >
+                         Quick View
+                       </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-display text-xl text-offwhite mb-1 group-hover:text-luxury transition-colors cursor-pointer" onClick={() => setSelectedProduct(product)}>{product.name}</h3>
+                    <h3 className={`font-display text-xl mb-1 transition-colors cursor-pointer ${product.quantity === 0 ? 'text-offwhite/40 cursor-not-allowed' : 'text-offwhite group-hover:text-luxury'}`} onClick={() => product.quantity !== 0 && setSelectedProduct(product)}>{product.name}</h3>
                     <p className="font-ui text-xs text-offwhite/50 uppercase tracking-wider mb-2">{product.category}</p>
-                    <p className="font-ui font-medium text-luxury">${product.price.toLocaleString()}</p>
+                    <p className={`font-ui font-medium ${product.quantity === 0 ? 'text-offwhite/40 decoration-line-through' : 'text-luxury'}`}>${product.price.toLocaleString()}</p>
                   </div>
-                  <button className="text-offwhite/40 hover:text-luxury transition-colors group/btn" data-hover="true">
-                    <ArrowUpRight size={20} className="transition-transform duration-300 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
-                  </button>
+                  {product.quantity !== 0 && (
+                    <button className="text-offwhite/40 hover:text-luxury transition-colors group/btn" data-hover="true">
+                      <ArrowUpRight size={20} className="transition-transform duration-300 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))

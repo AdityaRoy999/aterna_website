@@ -83,34 +83,19 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, onOpenA
 
             {/* MIDDLE SECTION: Navigation */}
             <nav className="hidden lg:flex justify-center items-center space-x-12 font-body text-sm tracking-widest text-offwhite/80 lg:justify-self-center">
-              <button 
-                onClick={() => onNavigate('shop')} 
-                className={navLinkClass('shop')}
-                data-hover="true"
-              >
-                SHOP
-              </button>
-              <button 
-                onClick={() => onNavigate('collections')} 
-                className={navLinkClass('collections')}
-                data-hover="true"
-              >
-                COLLECTIONS
-              </button>
-              <button 
-                onClick={() => onNavigate('maison')} 
-                className={navLinkClass('maison')}
-                data-hover="true"
-              >
-                MAISON
-              </button>
-              <button 
-                onClick={() => onNavigate('journal')} 
-                className={navLinkClass('journal')}
-                data-hover="true"
-              >
-                JOURNAL
-              </button>
+              {['shop', 'collections', 'maison', 'journal'].map((page) => (
+                <button 
+                  key={page}
+                  onClick={() => onNavigate(page)} 
+                  className={`group relative px-2 py-1 transition-colors duration-300 ${currentPage === page ? 'text-luxury' : 'hover:text-luxury'}`}
+                  data-hover="true"
+                >
+                  <span className="relative">
+                    {page.toUpperCase()}
+                    <span className={`absolute -bottom-1 left-0 w-full h-[0.5px] bg-luxury transform origin-left transition-transform duration-500 ease-out ${currentPage === page ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`} />
+                  </span>
+                </button>
+              ))}
             </nav>
 
             {/* RIGHT SECTION: Actions */}

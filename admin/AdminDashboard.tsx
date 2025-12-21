@@ -190,7 +190,10 @@ const NotificationsMenu = () => {
               </div>
             </div>
             
-            <div className="overflow-y-auto custom-scrollbar">
+            <div 
+              className="overflow-y-auto custom-scrollbar overscroll-contain max-h-[60vh] sm:max-h-[400px]"
+              data-lenis-prevent="true"
+            >
               {notifications.length === 0 ? (
                 <div className="p-6 text-center text-white/40 text-sm">
                   No notifications
@@ -341,7 +344,7 @@ const ExportMenu = ({ data, filename, headers }: any) => {
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
   const { user, signOut } = useAuth();
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'contact' | 'appointments' | 'careers' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'contact' | 'appointments' | 'careers' | 'settings' | 'journal'>('overview');
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -516,7 +519,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
           </button>
         </div>
         
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
+        <nav 
+          className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar overscroll-contain"
+          data-lenis-prevent="true"
+        >
           <SidebarItem 
             icon={<LayoutDashboard size={18} />} 
             label="Dashboard" 
@@ -907,6 +913,20 @@ const ProductsTab = () => {
 
   useEffect(() => {
     fetchProducts();
+
+    // Realtime Subscription
+    const subscription = supabase
+      .channel('admin-products')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, (payload) => {
+         // Ideally update state granularly, but refetching is safer for consistency
+         console.log('Realtime update received:', payload);
+         fetchProducts();
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchProducts = async () => {

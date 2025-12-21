@@ -94,6 +94,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           return {
             id: `${item.product_id}-${item.variant_name}`, // Reconstruct unique ID
+            productId: item.product_id, // Store raw UUID
             name: product.name,
             price: product.price,
             category: product.category,
@@ -119,23 +120,23 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const syncItemToServer = async (item: CartItem) => {
     if (!user) return;
-    console.log('Syncing item to server:', item);
     
     // Ensure we are using the UUID, not the composite ID
-    // Fix: UUIDs contain hyphens, so splitting by '-' breaks them. 
-    // We need to split by the LAST hyphen which separates the ID from the variant.
-    let originalProductId = item.id;
-    if (item.selectedColor && item.id.endsWith(`-${item.selectedColor}`)) {
-        originalProductId = item.id.slice(0, -(item.selectedColor.length + 1));
-    } else if (item.id.includes('-') && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id)) {
-        // Fallback for legacy IDs or other formats if needed, but for UUIDs the above check is safer
-        // If it's a UUID, it has 4 hyphens. If it has more, it might be a composite.
-        // But safer to rely on the logic that we constructed the ID as `${product.id}-${color}`
-        // So we just strip the suffix.
+    let originalProductId = item.productId;
+    
+    if (!originalProductId) {
+       // Fallback for legacy items using old ID logic
+       originalProductId = item.id;
+       if (item.selectedColor && item.id.endsWith(`-${item.selectedColor}`)) {
+          originalProductId = item.id.slice(0, -(item.selectedColor.length + 1));
+       } else if (item.id.includes('-') && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id)) {
+          // Additional fallback
+       }
     }
 
     // Validate UUID format before sending
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    // @ts-ignore
     if (!uuidRegex.test(originalProductId)) {
       console.error('Invalid Product ID (not a UUID):', originalProductId);
       return;
@@ -149,7 +150,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, { onConflict: 'user_id, product_id, variant_name' });
     
     if (error) console.error('Error syncing item:', error);
-    else console.log('Successfully synced item to server');
   };
 
   const removeItemFromServer = async (productId: string, variantName: string) => {
@@ -178,7 +178,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         );
         itemToSync = { ...existing, quantity: newQuantity };
       } else {
-        const newItem = { ...product, id: uniqueId, quantity, selectedColor: color };
+        const newItem: CartItem = { 
+            ...product, 
+            id: uniqueId, 
+            productId: product.id, // Explicitly save the raw ID
+            quantity, 
+            selectedColor: color 
+        };
         newItems = [...prev, newItem];
         itemToSync = newItem;
       }
@@ -197,11 +203,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setItems(prev => {
       const item = prev.find(i => i.id === uniqueId);
       if (item && user) {
-        let originalProductId = uniqueId;
-        if (item.selectedColor && uniqueId.endsWith(`-${item.selectedColor}`)) {
-            originalProductId = uniqueId.slice(0, -(item.selectedColor.length + 1));
+        // Use stored productId if available, else derive
+        let originalProductId = item.productId;
+        if (!originalProductId) {
+             originalProductId = uniqueId;
+             if (item.selectedColor && uniqueId.endsWith(`-${item.selectedColor}`)) {
+                 originalProductId = uniqueId.slice(0, -(item.selectedColor.length + 1));
+             }
         }
-        removeItemFromServer(originalProductId, item.selectedColor || 'Gold');
+        removeItemFromServer(originalProductId!, item.selectedColor || 'Gold');
       }
       return prev.filter(item => item.id !== uniqueId);
     });
