@@ -110,7 +110,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onNavigate }) => {
       const newOrderId = orderData.id;
       setOrderId(newOrderId);
 
-      // 1.5 Validate and Fix Product IDs (Handle Legacy Cart Items)
+      // 1.5 Validate and Fix Product IDs (Attempt to resolve, but don't block)
       const validItems = await Promise.all(items.map(async (item) => {
         let resolvedId = item.productId;
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -145,42 +145,13 @@ export const Checkout: React.FC<CheckoutProps> = ({ onNavigate }) => {
            }
         }
         
-        return { ...item, resolvedId: resolvedId }; 
+        // Use resolved ID if found, otherwise keep original
+        return { ...item, resolvedId: resolvedId || item.id }; 
       }));
 
-      // STRICT CHECK: Ensure all items have valid UUIDs
-      const invalidUUIDItems = validItems.filter(item => !item.resolvedId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.resolvedId));
-      
-      if (invalidUUIDItems.length > 0) {
-          const invalidNames = invalidUUIDItems.map(i => i.name).join(', ');
-          alert(`The following items are no longer available or have invalid data: ${invalidNames}. Please remove them from your cart to proceed.`);
-          setIsProcessing(false);
-          return;
-      }
-
-      // CRITICAL: Check if these IDs actually exist in the DB (Handle Deleted Products)
-      const idsToCheck = validItems.map(i => i.resolvedId);
-      const { data: existingProducts, error: checkError } = await supabase
-          .from('products')
-          .select('id')
-          .in('id', idsToCheck);
-
-      if (checkError) {
-          console.error('Failed to validate product existence', checkError);
-          alert('System error validating cart items. Please try again.');
-          setIsProcessing(false);
-          return;
-      }
-
-      const existingIds = new Set(existingProducts?.map(p => p.id));
-      const nonExistentItems = validItems.filter(item => !existingIds.has(item.resolvedId));
-
-      if (nonExistentItems.length > 0) {
-          const missingNames = nonExistentItems.map(i => i.name).join(', ');
-          alert(`The following items are no longer available (discontinued): ${missingNames}. Please remove them from your cart to proceed.`);
-          setIsProcessing(false);
-          return;
-      }
+      // REMOVED STRICT CHECKS per user request to allow checkout to proceed 
+      // even if frontend thinks items are invalid. 
+      // (Relying on "Emergency SQL Fix" to drop DB constraint if needed)
 
       // 2. Create Order Items
       const orderItems = validItems.map(item => ({
