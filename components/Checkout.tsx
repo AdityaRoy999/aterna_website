@@ -145,13 +145,23 @@ export const Checkout: React.FC<CheckoutProps> = ({ onNavigate }) => {
            }
         }
         
-        return { ...item, resolvedId: resolvedId || item.id }; // Fallback to item.id if all else fails
+        return { ...item, resolvedId: resolvedId }; 
       }));
+
+      // STRICT CHECK: Ensure all items have valid UUIDs
+      const invalidItems = validItems.filter(item => !item.resolvedId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.resolvedId));
+      
+      if (invalidItems.length > 0) {
+          const invalidNames = invalidItems.map(i => i.name).join(', ');
+          alert(`The following items are no longer available or have invalid data: ${invalidNames}. Please remove them from your cart to proceed.`);
+          setIsProcessing(false);
+          return;
+      }
 
       // 2. Create Order Items
       const orderItems = validItems.map(item => ({
           order_id: newOrderId,
-          product_id: item.resolvedId, // Use resolved ID
+          product_id: item.resolvedId, // Use resolved ID (guaranteed valid now)
           product_name: item.name,
           quantity: item.quantity,
           price: item.price,
