@@ -149,11 +149,35 @@ export const Checkout: React.FC<CheckoutProps> = ({ onNavigate }) => {
       }));
 
       // STRICT CHECK: Ensure all items have valid UUIDs
-      const invalidItems = validItems.filter(item => !item.resolvedId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.resolvedId));
+      const invalidUUIDItems = validItems.filter(item => !item.resolvedId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.resolvedId));
       
-      if (invalidItems.length > 0) {
-          const invalidNames = invalidItems.map(i => i.name).join(', ');
+      if (invalidUUIDItems.length > 0) {
+          const invalidNames = invalidUUIDItems.map(i => i.name).join(', ');
           alert(`The following items are no longer available or have invalid data: ${invalidNames}. Please remove them from your cart to proceed.`);
+          setIsProcessing(false);
+          return;
+      }
+
+      // CRITICAL: Check if these IDs actually exist in the DB (Handle Deleted Products)
+      const idsToCheck = validItems.map(i => i.resolvedId);
+      const { data: existingProducts, error: checkError } = await supabase
+          .from('products')
+          .select('id')
+          .in('id', idsToCheck);
+
+      if (checkError) {
+          console.error('Failed to validate product existence', checkError);
+          alert('System error validating cart items. Please try again.');
+          setIsProcessing(false);
+          return;
+      }
+
+      const existingIds = new Set(existingProducts?.map(p => p.id));
+      const nonExistentItems = validItems.filter(item => !existingIds.has(item.resolvedId));
+
+      if (nonExistentItems.length > 0) {
+          const missingNames = nonExistentItems.map(i => i.name).join(', ');
+          alert(`The following items are no longer available (discontinued): ${missingNames}. Please remove them from your cart to proceed.`);
           setIsProcessing(false);
           return;
       }
