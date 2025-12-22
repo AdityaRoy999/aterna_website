@@ -350,8 +350,8 @@ export const Checkout: React.FC<CheckoutProps> = ({ onNavigate }) => {
         <div className="w-24 h-24 rounded-full bg-green-500/10 flex items-center justify-center text-green-500 mb-8 border border-green-500/20 shadow-[0_0_40px_rgba(34,197,94,0.2)]">
           <CheckCircle size={48} />
         </div>
-        <h1 className="font-display text-5xl md:text-6xl text-luxury mb-6">Order Confirmed</h1>
-        <p className="font-body text-offwhite/60 max-w-lg mb-8 text-lg">
+        <h1 className="font-display text-5xl md:text-6xl text-luxury mb-6 leading-tight">Order Confirmed</h1>
+        <p className="font-body text-offwhite/60 max-w-lg mb-8 text-lg leading-relaxed">
           Thank you for choosing AETERNA. Your order #{orderId} has been placed successfully. A confirmation email has been sent to {formData.email}.
         </p>
         <div className="flex flex-col md:flex-row gap-4">
@@ -392,8 +392,8 @@ export const Checkout: React.FC<CheckoutProps> = ({ onNavigate }) => {
           {/* Left Column: Forms */}
           <div className="flex-1 order-2 lg:order-1">
             <div className="mb-12">
-              <h1 className="font-display text-4xl text-offwhite mb-2">Secure Checkout</h1>
-              <p className="font-body text-offwhite/40 text-sm">Please enter your details below.</p>
+              <h1 className="font-display text-4xl text-offwhite mb-2 leading-tight">Secure Checkout</h1>
+              <p className="font-body text-offwhite/40 text-sm leading-relaxed">Please enter your details below.</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-12">

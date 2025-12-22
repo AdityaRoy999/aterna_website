@@ -32,7 +32,13 @@ const QuickViewModal: React.FC<{ product: Product; onClose: () => void }> = ({ p
   };
 
   const handleAddToCart = () => {
-    const productToAdd = { ...product, imageUrl: displayImage };
+    // Determine the effective price: use variant price if set, otherwise product base price
+    const effectivePrice = currentVariant?.price || product.price;
+    // Create a product object that includes the specific price so the CartContext can use it immediately if needed,
+    // although CartContext logic often re-fetches or recalculates. We'll ensure CartContext handles this.
+    // We override the price in the object we pass to addToCart.
+    const productToAdd = { ...product, imageUrl: displayImage, price: effectivePrice };
+    
     addToCart(productToAdd, 1, selectedVariant);
     // Close modal after adding to cart to return to page state and allow card to disappear
     handleClose();
@@ -120,7 +126,7 @@ const QuickViewModal: React.FC<{ product: Product; onClose: () => void }> = ({ p
                  </h2>
                  
                  <p className="font-ui text-xl text-luxury mb-6">
-                   ${product.price.toLocaleString()}
+                   ${(currentVariant?.price || product.price).toLocaleString()}
                  </p>
 
                  <p className="font-body text-offwhite/60 leading-relaxed text-sm mb-6">
@@ -245,7 +251,8 @@ export const Shop: React.FC<ShopProps> = ({ initialProductId }) => {
               name: p.color || 'Standard',
               imageUrl: p.image_url,
               colorCode: '#000000', // Default
-              description: p.description
+              description: p.description,
+              price: undefined // Base variant usually inherits base price, but can be explicit
             };
 
             // Parse existing variants from DB (if any)

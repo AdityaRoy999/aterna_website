@@ -4,6 +4,7 @@ import { PageHero } from './PageHero';
 import { ArrowUpRight, ArrowLeft, Calendar, Share2, Clock } from 'lucide-react';
 import { ParallaxBackground } from './ParallaxBackground';
 import { supabase } from '../src/supabaseClient';
+import Lenis from 'lenis';
 
 // --- Types ---
 interface Article {
@@ -65,11 +66,37 @@ const mockArticles: Article[] = [
 const JournalArticleModal: React.FC<{ article: Article; onClose: () => void }> = ({ article, onClose }) => {
   const [isClosing, setIsClosing] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     requestAnimationFrame(() => setIsVisible(true));
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
+
+    // Initialize Scoped Lenis for the modal
+    // @ts-ignore
+    const lenis = new Lenis({
+      wrapper: scrollContainerRef.current!, // The scrollable container
+      content: scrollContainerRef.current!.firstElementChild as HTMLElement, // The content
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      direction: 'vertical',
+      gestureDirection: 'vertical',
+      smooth: true,
+      mouseMultiplier: 1,
+      smoothTouch: false,
+      touchMultiplier: 2,
+    });
+
+    function raf(time: number) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+    requestAnimationFrame(raf);
+
+    return () => { 
+        document.body.style.overflow = ''; 
+        lenis.destroy();
+    };
   }, []);
 
   const handleClose = () => {
@@ -98,9 +125,11 @@ const JournalArticleModal: React.FC<{ article: Article; onClose: () => void }> =
 
         {/* Scrollable Content */}
         <div 
+            ref={scrollContainerRef}
             className="absolute inset-0 overflow-y-auto custom-scrollbar overscroll-contain"
             data-lenis-prevent="true"
         >
+            <div className="min-h-full"> {/* Wrapper for Lenis Content */}
             {/* Article Hero */}
             <div className="w-full h-[60vh] relative shrink-0">
                 <img src={article.imageUrl} alt={article.title} className="w-full h-full object-cover" />
@@ -163,6 +192,7 @@ const JournalArticleModal: React.FC<{ article: Article; onClose: () => void }> =
                         Back to Journal
                      </button>
                 </div>
+                </div> {/* End Wrapper */}
             </div>
         </div>
     </div>,

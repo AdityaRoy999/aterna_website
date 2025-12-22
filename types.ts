@@ -3,6 +3,7 @@ export interface ProductVariant {
   imageUrl: string;
   colorCode?: string; // For color swatches
   description?: string;
+  price?: number;
 }
 
 export interface Product {

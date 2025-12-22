@@ -1400,12 +1400,21 @@ const ProductModal = ({ product, onClose, onSave }: any) => {
                   {variants.map((variant, index) => (
                     <div key={index} className="flex gap-2 items-start bg-black/20 p-2 rounded border border-white/5">
                       <div className="flex-1 space-y-2">
-                        <input 
-                          placeholder={formData.variant_type === 'Size' ? "e.g. 50ml" : "e.g. Gold"}
-                          className="w-full bg-white/5 border border-white/10 rounded p-1.5 text-xs text-white focus:border-luxury focus:outline-none"
-                          value={variant.name}
-                          onChange={e => handleVariantChange(index, 'name', e.target.value)}
-                        />
+                        <div className="flex gap-2">
+                          <input 
+                            placeholder={formData.variant_type === 'Size' ? "e.g. 50ml" : "e.g. Gold"}
+                            className="bg-white/5 border border-white/10 rounded p-1.5 text-xs text-white focus:border-luxury focus:outline-none flex-1"
+                            value={variant.name}
+                            onChange={e => handleVariantChange(index, 'name', e.target.value)}
+                          />
+                          <input 
+                            type="number"
+                            placeholder="Price (Optional)"
+                            className="w-24 bg-white/5 border border-white/10 rounded p-1.5 text-xs text-white focus:border-luxury focus:outline-none"
+                            value={variant.price || ''}
+                            onChange={e => handleVariantChange(index, 'price', parseFloat(e.target.value))}
+                          />
+                        </div>
                         <input 
                           placeholder="Image URL (Optional)"
                           className="w-full bg-white/5 border border-white/10 rounded p-1.5 text-xs text-white/60 focus:border-luxury focus:outline-none"

@@ -92,11 +92,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
              variants = typeof product.variants === 'string' ? JSON.parse(product.variants) : product.variants;
           } catch (e) { variants = []; }
 
+          // Find specific variant logic
+          const specificVariant = Array.isArray(variants) ? variants.find((v: any) => v.name === item.variant_name) : null;
+          const variantPrice = specificVariant?.price || product.price;
+
           return {
             id: `${item.product_id}-${item.variant_name}`, // Reconstruct unique ID
             productId: item.product_id, // Store raw UUID
             name: product.name,
-            price: product.price,
+            price: variantPrice, // Use resolved price
             category: product.category,
             imageUrl: product.image_url,
             description: product.description,
@@ -183,7 +187,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             id: uniqueId, 
             productId: product.id, // Explicitly save the raw ID
             quantity, 
-            selectedColor: color 
+            selectedColor: color,
+            price: product.price // Should be the variant price if passed from Shop.tsx
         };
         newItems = [...prev, newItem];
         itemToSync = newItem;
