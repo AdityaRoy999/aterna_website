@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Star, User, Trash2, Send } from 'lucide-react';
+import { Star, User, Trash2, Send, ChevronDown } from 'lucide-react';
 import { supabase } from '../src/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 
@@ -131,6 +131,12 @@ export const Reviews: React.FC<ReviewsProps> = ({ productId }) => {
     }
   };
 
+  const [filterRating, setFilterRating] = useState<number | 'all'>('all');
+
+  const filteredReviews = reviews.filter(review => 
+    filterRating === 'all' ? true : review.rating === filterRating
+  );
+
   const StarRating = ({ value, onChange, readonly = false }: { value: number, onChange?: (val: number) => void, readonly?: boolean }) => (
     <div className="flex gap-1">
       {[1, 2, 3, 4, 5].map((star) => (
@@ -150,9 +156,47 @@ export const Reviews: React.FC<ReviewsProps> = ({ productId }) => {
     </div>
   );
 
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+
   return (
-    <div className="space-y-8 animate-fade-in">
-      <h3 className="font-display text-2xl text-offwhite">Reviews ({reviews.length})</h3>
+    <div className="space-y-8 animate-fade-in relative">
+      <div className="flex justify-between items-center">
+        <h3 className="font-display text-2xl text-offwhite">Reviews ({reviews.length})</h3>
+        
+        {/* Filter Dropdown */}
+        <div className="relative z-30">
+          <button 
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+            className="flex items-center gap-2 text-xs uppercase tracking-widest text-offwhite/60 hover:text-luxury transition-colors"
+          >
+            Filter: {filterRating === 'all' ? 'All Stars' : `${filterRating} Stars`} <ChevronDown size={14} className={`transition-transform duration-300 ${isFilterOpen ? 'rotate-180' : ''}`} />
+          </button>
+          
+          {isFilterOpen && (
+            <>
+              <div className="fixed inset-0 z-20" onClick={() => setIsFilterOpen(false)} />
+              <div className="absolute right-0 mt-2 w-32 bg-[#1a1a1a] border border-white/10 rounded-lg shadow-xl overflow-hidden animate-fade-in z-30">
+                <button 
+                  onClick={() => { setFilterRating('all'); setIsFilterOpen(false); }}
+                  className={`w-full text-left px-4 py-2 text-xs hover:bg-white/5 ${filterRating === 'all' ? 'text-luxury' : 'text-offwhite/60'}`}
+                >
+                  All Stars
+                </button>
+                {[5, 4, 3, 2, 1].map(star => (
+                  <button 
+                    key={star}
+                    onClick={() => { setFilterRating(star); setIsFilterOpen(false); }}
+                    className={`w-full text-left px-4 py-2 text-xs hover:bg-white/5 flex items-center gap-2 ${filterRating === star ? 'text-luxury' : 'text-offwhite/60'}`}
+                  >
+                    <span>{star} Stars</span>
+                    <Star size={10} className={filterRating === star ? 'fill-luxury' : ''} />
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
 
       {/* Review Form */}
       {user ? (
@@ -185,27 +229,17 @@ export const Reviews: React.FC<ReviewsProps> = ({ productId }) => {
       )}
 
       {/* Reviews List (scrollable area) */}
-      <div className="space-y-4">
+      <div className="space-y-4 pb-12"> 
         <div
           ref={scrollRef}
-          className="max-h-[40vh] md:max-h-[60vh] overflow-y-auto space-y-4 pr-2 overscroll-contain"
-          onWheel={(e) => {
-            const el = scrollRef.current;
-            if (!el) return;
-            const delta = e.deltaY;
-            const atTop = el.scrollTop <= 0;
-            const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
-            if ((delta < 0 && !atTop) || (delta > 0 && !atBottom)) {
-              e.stopPropagation();
-            }
-          }}
+          className="space-y-4"
         >
           {loading ? (
             <div className="text-center py-8 text-white/40">Loading reviews...</div>
-          ) : reviews.length === 0 ? (
-            <div className="text-center py-8 text-white/40">No reviews yet. Be the first to review!</div>
+          ) : filteredReviews.length === 0 ? (
+            <div className="text-center py-8 text-white/40">No reviews found with this filter.</div>
           ) : (
-            reviews.map((review, index) => (
+            filteredReviews.map((review, index) => (
               <div 
                 key={review.id} 
                 className="bg-white/5 rounded-xl p-6 border border-white/5"

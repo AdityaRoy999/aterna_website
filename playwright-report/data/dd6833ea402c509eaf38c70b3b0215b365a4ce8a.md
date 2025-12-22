@@ -1,0 +1,214 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - button [ref=e5]:
+      - img [ref=e7]
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - heading "AETERNA" [level=3]
+            - text: Concierge
+        - button:
+          - img
+      - generic:
+        - button "Clear History":
+          - generic: Clear History
+      - generic:
+        - generic:
+          - generic:
+            - generic: Welcome to AETERNA. I am your personal concierge. How may I assist you with your collection today?
+      - generic:
+        - generic:
+          - textbox "Type your inquiry..."
+          - button [disabled]
+  - generic [ref=e12]:
+    - generic [ref=e13]:
+      - generic [ref=e14]:
+        - img [ref=e15]
+        - heading "Your Selection" [level=2] [ref=e18]
+      - button [ref=e19]:
+        - img [ref=e20]
+    - generic [ref=e24]:
+      - img [ref=e25]
+      - paragraph [ref=e28]: Your bag is empty.
+      - button "Continue Shopping" [ref=e29]
+    - generic:
+      - generic:
+        - generic:
+          - generic: Subtotal
+          - generic: $0
+        - generic:
+          - generic: Shipping
+          - generic: Calculated at checkout
+      - button "Proceed to Checkout":
+        - text: Proceed to Checkout
+        - img
+  - generic [ref=e30]:
+    - banner:
+      - generic [ref=e31]:
+        - button "AETERNA Logo AETERNA" [ref=e33]:
+          - img "AETERNA Logo" [ref=e34]
+          - generic [ref=e35]: AETERNA
+        - navigation [ref=e36]:
+          - button "SHOP" [ref=e37]:
+            - generic [ref=e38]: SHOP
+          - button "COLLECTIONS" [ref=e39]:
+            - generic [ref=e40]: COLLECTIONS
+          - button "MAISON" [ref=e41]:
+            - generic [ref=e42]: MAISON
+          - button "JOURNAL" [ref=e43]:
+            - generic [ref=e44]: JOURNAL
+        - generic [ref=e45]:
+          - button "Wishlist" [ref=e46]:
+            - img [ref=e47]
+          - button "Sign In" [ref=e49]:
+            - img [ref=e50]
+          - button [ref=e53]:
+            - img [ref=e54]
+          - button "Menu" [ref=e57]:
+            - generic [ref=e58]: Menu
+            - img [ref=e59]
+    - generic:
+      - generic:
+        - button:
+          - img
+      - generic:
+        - button "Home"
+        - button "Shop"
+        - button "Collections"
+        - button "Maison"
+        - button "Journal"
+      - generic:
+        - generic: © 2025 Aeterna
+        - generic:
+          - link "Instagram":
+            - /url: "#"
+          - link "Twitter":
+            - /url: "#"
+    - main [ref=e60]:
+      - generic [ref=e61]:
+        - generic [ref=e63]:
+          - generic [ref=e64]:
+            - heading "TIMELESS" [level=1] [ref=e65]
+            - paragraph [ref=e67]: redefining luxury for the modern era.
+          - generic [ref=e69]: Discover
+        - generic [ref=e73]:
+          - generic [ref=e74]:
+            - heading "Curated Essentials" [level=2] [ref=e75]
+            - button "View All Collection" [ref=e76]
+          - generic [ref=e77]:
+            - generic [ref=e78] [cursor=pointer]:
+              - img "Noir Elegance" [ref=e81]
+              - generic [ref=e83]:
+                - generic [ref=e84]:
+                  - paragraph [ref=e85]: Accessories
+                  - heading "Noir Elegance" [level=3] [ref=e86]
+                  - paragraph [ref=e87]: $450
+                - button [ref=e88]:
+                  - img [ref=e89]
+            - generic [ref=e92] [cursor=pointer]:
+              - img "Royal Chrono" [ref=e95]
+              - generic [ref=e97]:
+                - generic [ref=e98]:
+                  - paragraph [ref=e99]: Timepieces
+                  - heading "Royal Chrono" [level=3] [ref=e100]
+                  - paragraph [ref=e101]: $24,500
+                - button [ref=e102]:
+                  - img [ref=e103]
+            - generic [ref=e106] [cursor=pointer]:
+              - img "Amber Essence" [ref=e109]
+              - generic [ref=e111]:
+                - generic [ref=e112]:
+                  - paragraph [ref=e113]: Fragrance
+                  - heading "Amber Essence" [level=3] [ref=e114]
+                  - paragraph [ref=e115]: $310
+                - button [ref=e116]:
+                  - img [ref=e117]
+              - generic [ref=e120]: New Arrival
+            - generic [ref=e121] [cursor=pointer]:
+              - img "Pearl Drop" [ref=e124]
+              - generic [ref=e126]:
+                - generic [ref=e127]:
+                  - paragraph [ref=e128]: Jewelry
+                  - heading "Pearl Drop" [level=3] [ref=e129]
+                  - paragraph [ref=e130]: $890
+                - button [ref=e131]:
+                  - img [ref=e132]
+    - contentinfo [ref=e135]:
+      - generic [ref=e136]:
+        - generic [ref=e137]:
+          - generic [ref=e138]:
+            - heading "Join the Inner Circle" [level=2] [ref=e139]
+            - paragraph [ref=e140]: Subscribe to receive invitations to private viewings, exclusive product drops, and the latest from our ateliers.
+            - generic [ref=e141]:
+              - textbox "Email Address" [ref=e142]
+              - button "Subscribe" [ref=e143]:
+                - generic [ref=e144]: Subscribe
+                - img [ref=e145]
+          - generic [ref=e148]:
+            - link [ref=e149]:
+              - /url: "#"
+              - img [ref=e150]
+            - link [ref=e153]:
+              - /url: "#"
+              - img [ref=e154]
+            - link [ref=e156]:
+              - /url: "#"
+              - img [ref=e157]
+            - link [ref=e159]:
+              - /url: "#"
+              - img [ref=e160]
+        - generic [ref=e165]:
+          - generic [ref=e166]:
+            - heading "AETERNA" [level=3] [ref=e167]
+            - paragraph [ref=e168]:
+              - text: 12 Rue de la Paix
+              - text: 75002 Paris, France
+              - text: +33 1 42 60 00 00
+              - text: concierge@aeterna.com
+          - generic [ref=e169]:
+            - heading "Collections" [level=4] [ref=e170]
+            - list [ref=e171]:
+              - listitem [ref=e172]:
+                - button "Timepieces" [ref=e173]: Timepieces
+              - listitem [ref=e174]:
+                - button "Fine Jewelry" [ref=e175]: Fine Jewelry
+              - listitem [ref=e176]:
+                - button "Fragrances" [ref=e177]: Fragrances
+              - listitem [ref=e178]:
+                - button "Accessories" [ref=e179]: Accessories
+          - generic [ref=e180]:
+            - heading "The Maison" [level=4] [ref=e181]
+            - list [ref=e182]:
+              - listitem [ref=e183]:
+                - button "Our Heritage" [ref=e184]: Our Heritage
+              - listitem [ref=e185]:
+                - button "The Ateliers" [ref=e186]: The Ateliers
+              - listitem [ref=e187]:
+                - button "Sustainability" [ref=e188]: Sustainability
+              - listitem [ref=e189]:
+                - button "Careers" [ref=e190]: Careers
+          - generic [ref=e191]:
+            - heading "Client Care" [level=4] [ref=e192]
+            - list [ref=e193]:
+              - listitem [ref=e194]:
+                - button "Contact Us" [ref=e195]: Contact Us
+              - listitem [ref=e196]:
+                - button "Shipping & Returns" [ref=e197]: Shipping & Returns
+              - listitem [ref=e198]:
+                - button "Book Appointment" [ref=e199]: Book Appointment
+              - listitem [ref=e200]:
+                - button "Track Your Order" [ref=e201]: Track Your Order
+        - generic [ref=e202]:
+          - paragraph [ref=e203]: © 2025 AETERNA Luxury Holdings.
+          - generic [ref=e204]:
+            - button "Privacy Policy" [ref=e205]
+            - button "Terms of Use" [ref=e206]
+      - generic:
+        - generic: AETERNA
+      - button "Scroll to top":
+        - img
+```

@@ -85,7 +85,10 @@ const QuickViewModal: React.FC<{ product: Product; onClose: () => void }> = ({ p
         </div>
 
         {/* Right Column: Details */}
-        <div className="w-full md:w-1/2 flex-1 md:h-full p-6 md:p-10 flex flex-col overflow-y-auto custom-scrollbar relative">
+        <div 
+          className="w-full md:w-1/2 flex-1 md:h-full p-6 md:p-10 flex flex-col overflow-y-auto custom-scrollbar relative"
+          data-lenis-prevent="true"
+        >
           
           {/* Tabs */}
           <div className="flex gap-6 mb-6 border-b border-white/5 pb-4">

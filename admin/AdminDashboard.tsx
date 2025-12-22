@@ -1400,27 +1400,36 @@ const ProductModal = ({ product, onClose, onSave }: any) => {
                   {variants.map((variant, index) => (
                     <div key={index} className="flex gap-2 items-start bg-black/20 p-2 rounded border border-white/5">
                       <div className="flex-1 space-y-2">
-                        <div className="flex gap-2">
-                          <input 
-                            placeholder={formData.variant_type === 'Size' ? "e.g. 50ml" : "e.g. Gold"}
-                            className="bg-white/5 border border-white/10 rounded p-1.5 text-xs text-white focus:border-luxury focus:outline-none flex-1"
-                            value={variant.name}
-                            onChange={e => handleVariantChange(index, 'name', e.target.value)}
-                          />
-                          <input 
-                            type="number"
-                            placeholder="Price (Optional)"
-                            className="w-24 bg-white/5 border border-white/10 rounded p-1.5 text-xs text-white focus:border-luxury focus:outline-none"
-                            value={variant.price || ''}
-                            onChange={e => handleVariantChange(index, 'price', parseFloat(e.target.value))}
-                          />
+                        <div className="grid grid-cols-[2fr,1fr] gap-2 mb-2">
+                          <div>
+                            <label className="block text-[10px] uppercase text-white/30 mb-1">Variant Name</label>
+                            <input 
+                              placeholder={formData.variant_type === 'Size' ? "e.g. 50ml" : "e.g. Gold"}
+                              className="w-full bg-white/5 border border-white/10 rounded p-2 text-xs text-white focus:border-luxury focus:outline-none"
+                              value={variant.name}
+                              onChange={e => handleVariantChange(index, 'name', e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] uppercase text-white/30 mb-1">Price (+)</label>
+                            <input 
+                              type="number"
+                              placeholder="Default"
+                              className="w-full bg-white/5 border border-white/10 rounded p-2 text-xs text-white focus:border-luxury focus:outline-none"
+                              value={variant.price || ''}
+                              onChange={e => handleVariantChange(index, 'price', e.target.value as any)}
+                            />
+                          </div>
                         </div>
-                        <input 
-                          placeholder="Image URL (Optional)"
-                          className="w-full bg-white/5 border border-white/10 rounded p-1.5 text-xs text-white/60 focus:border-luxury focus:outline-none"
-                          value={variant.imageUrl || ''}
-                          onChange={e => handleVariantChange(index, 'imageUrl', e.target.value)}
-                        />
+                        <div>
+                           <label className="block text-[10px] uppercase text-white/30 mb-1">Image URL</label>
+                           <input 
+                              placeholder="Optional - Overrides main image"
+                              className="w-full bg-white/5 border border-white/10 rounded p-2 text-xs text-white/60 focus:border-luxury focus:outline-none"
+                              value={variant.imageUrl || ''}
+                              onChange={e => handleVariantChange(index, 'imageUrl', e.target.value)}
+                           />
+                        </div>
                       </div>
                       <button 
                         type="button"
