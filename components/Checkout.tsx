@@ -392,7 +392,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onNavigate }) => {
           {/* Left Column: Forms */}
           <div className="flex-1 order-2 lg:order-1">
             <div className="mb-12">
-              <h1 className="font-display text-4xl text-offwhite mb-2">Secure Checkout (v2)</h1>
+              <h1 className="font-display text-4xl text-offwhite mb-2">Secure Checkout</h1>
               <p className="font-body text-offwhite/40 text-sm">Please enter your details below.</p>
             </div>
 

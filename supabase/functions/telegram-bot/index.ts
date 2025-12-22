@@ -257,9 +257,26 @@ Price: <b>$${p.price}</b>
     }
   }
 
+  else if (data === 'sign_out') {
+    await supabase
+      .from('profiles')
+      .update({ telegram_chat_id: null })
+      .eq('id', profile.id)
+
+    await sendTelegramMessage(chatId, `
+<b>👋 Signed Out Successfully</b>
+
+You have been disconnected from your AETERNA account.
+To sign in again, please verify your 6-digit code.
+    `)
+  }
+
   // Acknowledge callback
   await answerCallbackQuery(query.id)
 }
+
+
+
 
 // --- Helpers ---
 
@@ -267,7 +284,8 @@ function getMainKeyboard() {
   return [
     [{ text: "📦 My Orders", callback_data: "view_orders" }, { text: "🛒 My Cart", callback_data: "view_cart" }],
     [{ text: "🔍 Explore Products", callback_data: "explore" }],
-    [{ text: "🌐 Visit Website", url: "https://aeterna.store" }]
+    [{ text: "🌐 Visit Website", url: "https://aeterna.store" }],
+    [{ text: "❌ Sign Out", callback_data: "sign_out" }]
   ]
 }
 
